@@ -8,7 +8,13 @@ for (i in 1:length(tables_database)) {
   
 }
 names(db_full) <- tables_database
-save(db_full, file = paste0(database_path, "/Backup_Workspace/workspace", date, ".RData"))
+save(db_full, file = paste0(database_path, "/Backup_Workspace/db_full", date, ".RData"))
+
+# Backup formatted database als R dataframe
+save(db, file = paste0(database_path, "/Backup_Workspace/db", date, ".RData"))
+
+# Backup whole workspace
+save.image(file = paste0(database_path, "/Backup_Workspace/workspace", date, ".RData"))
 
 #Disconnect from Aware Remote Database
 cons <- dbListConnections(MySQL())
