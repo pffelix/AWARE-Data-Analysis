@@ -75,15 +75,6 @@ for(dev in 1:dev_N){
 #   }
 # }
 
-# Plot histogram
-sub <- subset(db, variable == "esm_boredom_stress")
-
-ggplot(sub, aes(arousal-2)) +
-   geom_histogram(col="black",binwidth = 1, boundary = -0.5) +
-  #labs(x="Arousal level", y="Frequency") 
-   scale_x_continuous(breaks=lab_at,labels=lab)+
-   labs(x=paste0("Self-assessed arousal level (N=",arousal_N,")"), y="Frequency") 
-ggsave(file="hist_ar_freq.emf")
 
 # Plot Increacse answer time after installation
 sub <- subset(db, variable == "esm_boredom_stress")

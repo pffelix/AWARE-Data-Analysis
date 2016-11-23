@@ -61,12 +61,16 @@ db_work[["aware_device"]][nrow(db_work[["aware_device"]]), 2] <- 1478551762000
 db_work[["aware_device"]][nrow(db_work[["aware_device"]]), 3] <- "4015af15-2673-4d7d-b9e7-3586f7bba2f9"
 
 # remove researcher device and remove further participants (data cleansing)
-
-remove_devices <- c("460f0293-0d5a-44a0-b236-d883bb6dbe55","b7781340-8544-4eea-897e-01d840e6da5d","6c0a744a-3196-4b3a-ae7b-6b81362a9f37","4623288b-cf81-4ae3-88ea-f70244b2773d")
-for (j in 1:length(remove_devices)) {
-  for (i in 1:length(sensor)) {
-    db_work[[i]] <- db_work[[i]][!db_work[[i]]$device_id == remove_devices[j],]
+data_cleansing <- TRUE
+if (data_cleansing==TRUE) {
+  remove_devices <- c("460f0293-0d5a-44a0-b236-d883bb6dbe55","b7781340-8544-4eea-897e-01d840e6da5d","f5f14668-c994-4f02-b837-bde6dfde6493","4623288b-cf81-4ae3-88ea-f70244b2773d","6c0a744a-3196-4b3a-ae7b-6b81362a9f37")
+  for (j in 1:length(remove_devices)) {
+    for (i in 1:length(sensor)) {
+      db_work[[i]] <- db_work[[i]][!db_work[[i]]$device_id == remove_devices[j],]
+    }
   }
+} else {
+  remove_devices <- c()
 }
 
 
@@ -259,7 +263,7 @@ db <- dplyr::arrange(db, timestamp)
 db <- db[order(db[,"id"],db[,"timestamp_end"]),]
 db_N= nrow(db)
 rownames(db) <- seq(length=db_N)
-
+db_init <- db
 
 
 # generate general statistics dataframe

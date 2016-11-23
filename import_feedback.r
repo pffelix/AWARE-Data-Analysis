@@ -4,7 +4,7 @@ sosci_import_function <- function(db_temp){
   
   #data_file = file.choose()
   # setwd("./")
-  data_file = "C:/Users/Felix/Dropbox/Apps/Aware/Database/Sosci_Survey/rdata_feedback_aware.csv"
+  data_file = "C:/Users/Felix/Dropbox/Apps/Aware/Database/Sosci_Survey/rdata_feedback_aware_2016-11-21_11-13.csv"
   
   data = read.table(
     file=data_file, encoding="UTF-8",
@@ -171,15 +171,17 @@ sosci_import_function <- function(db_temp){
   rownames(data_temp) <- seq(length=nrow(data_temp))
   
   # delete particpants who were ignored because of data cleansing
-  remove_vector <- c()
-  for (j in 1:nrow(data_temp)) {
-    id <- which(substr(as.character(remove_devices),1,7) == substr(as.character(data_temp$device_id[j]),start=1,stop=7))
-    #print(id)
-    if (length(id)!=0) {
-      remove_vector <- c(remove_vector,c(j))
+  if (data_cleansing==TRUE){
+    remove_vector <- c()
+    for (j in 1:nrow(data_temp)) {
+      id <- which(substr(as.character(remove_devices),1,7) == substr(as.character(data_temp$device_id[j]),start=1,stop=7))
+      #print(id)
+      if (length(id)!=0) {
+        remove_vector <- c(remove_vector,c(j))
+      }
     }
-  }
   data_temp <- data_temp[-remove_vector, ]
+  }
   rownames(data_temp) <- seq(length=nrow(data_temp))
   
   
@@ -247,9 +249,20 @@ sosci_import_function <- function(db_temp){
         char_temp <- (as.character(data_temp[pos,variable_name[variable_pos]]))
       }
       else{
-        char_temp <-as.character(as.numeric(as.character(data_temp[pos,variable_name[variable_pos]]))-3)
-        #print(char_temp)
+        char_temp <-as.numeric(as.character(data_temp[pos,variable_name[variable_pos]]))-3
+        if (variable_pos ==6 ||  variable_pos==11){
+          if (char_temp==2){
+            warning(as.character(data_temp$device_id[pos]))
+          }
         }
+        if (variable_pos==8){
+
+          if (char_temp==-2){
+            warning(as.character(data_temp$device_id[pos]))
+          }        
+        }
+        char_temp <-as.character(char_temp)
+      }
       data_pre_temp[pos_temp,"value"] <- char_temp
     }
   }
