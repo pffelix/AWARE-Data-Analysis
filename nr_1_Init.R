@@ -60,10 +60,10 @@ db_work[["aware_device"]][nrow(db_work[["aware_device"]]), 1] <- 1
 db_work[["aware_device"]][nrow(db_work[["aware_device"]]), 2] <- 1478551762000
 db_work[["aware_device"]][nrow(db_work[["aware_device"]]), 3] <- "4015af15-2673-4d7d-b9e7-3586f7bba2f9"
 
-# remove researcher device and remove further participants (data cleansing)
+# remove researcher device and remove further participants (data cleansing) first 2 - technical problems
 data_cleansing <- TRUE
 if (data_cleansing==TRUE) {
-  remove_devices <- c("460f0293-0d5a-44a0-b236-d883bb6dbe55","b7781340-8544-4eea-897e-01d840e6da5d","f5f14668-c994-4f02-b837-bde6dfde6493","4623288b-cf81-4ae3-88ea-f70244b2773d","6c0a744a-3196-4b3a-ae7b-6b81362a9f37")
+  remove_devices <- c("460f0293-0d5a-44a0-b236-d883bb6dbe55","55213ca5-77d0-4563-9c61-5f1670c25d73","b7781340-8544-4eea-897e-01d840e6da5d","f5f14668-c994-4f02-b837-bde6dfde6493","4623288b-cf81-4ae3-88ea-f70244b2773d","6c0a744a-3196-4b3a-ae7b-6b81362a9f37")
   for (j in 1:length(remove_devices)) {
     for (i in 1:length(sensor)) {
       db_work[[i]] <- db_work[[i]][!db_work[[i]]$device_id == remove_devices[j],]
@@ -75,10 +75,10 @@ if (data_cleansing==TRUE) {
 
 
 
-
-
 # delte invalid automatically generated aware device_id=53fc0613-b7e3-4e8e-a9d3-67182b3d3c42 
 db_work[["aware_device"]] <- db_work[["aware_device"]][-c(which(db_work[["aware_device"]]$device_id == "53fc0613-b7e3-4e8e-a9d3-67182b3d3c42")), ] 
+# delte invalid automatically generated aware device_id=55213ca5-77d0-4563-9c61-5f1670c25d73
+#db_work[["aware_device"]] <- db_work[["aware_device"]][-c(which(db_work[["aware_device"]]$device_id == "55213ca5-77d0-4563-9c61-5f1670c25d73")), ] 
 
 # give new unique and simple ids
 db_work[["aware_device"]][, "id"] <- NA
@@ -214,10 +214,35 @@ db = as.data.frame(data.table::rbindlist(db_work, fill=TRUE))
 
 # Post processing
 
+# delete all values later than 2 weeks
+delete_study_week<- c()
+study_period <- 14*24*60*60
+one_week <- 7*24*60*60
+# Length of window in s to calculate dependent variable before measurement of independent variable delta t in seconds
+dt_min <- 1/6*60*60
+# Length of window in s to calculate dependent variable after measurement of independent variable delta t in seconds
+dt_max <- 1/6*60*60
+# time interval of participants answers
+one_interval <- 2*60*60
+# delete participants who extend study_period
+study_period_extend <- TRUE
 
 for (pos in 1:nrow(db)) {
   # calculate time difference after sign nup
-  db[pos,"timestamp_end_diff"] <- as.numeric(db$timestamp_end[pos]) - as.numeric(db_work[["aware_device"]]$timestamp[db[pos,"id"]])
+  time_after_signup <- as.numeric(db$timestamp_end[pos]) - as.numeric(db_work[["aware_device"]]$timestamp[db[pos,"id"]])
+  # calculate current week of participant
+  db[pos,"week"] <- ceiling(time_after_signup/one_week)
+  # calculate intervall_id of the measurment 
+  db[pos,"interval"] <- ceiling(time_after_signup/one_interval)
+  
+  if (time_after_signup > study_period){
+    delete_study_week <- c(delete_study_week,pos)
+  }else{
+    db[pos,"timestamp_end_diff"] <- time_after_signup
+  }
+}
+if (study_period_extend == TRUE){
+  db_temp <- db[-delete_study_week, ]
 }
 
 
@@ -233,7 +258,7 @@ for (dev in 1:dev_N) {
 # import new databases after preprocessing
 db_test <- db
 # import feedback answers inputed by the participants on Sosci Survey
-source("C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/import_feedback.R")
+source("C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/import_sosci.R")
 db <- sosci_import_function(db)
 
 
@@ -257,7 +282,7 @@ col_idx <- grep("\\bid\\b", names(db))
 db <- db[, c(col_idx, (1:ncol(db))[-col_idx])]
 
 #  Reorder rows
-# sort by date
+# sort by datejui
 
 db <- dplyr::arrange(db, timestamp)
 db <- db[order(db[,"id"],db[,"timestamp_end"]),]

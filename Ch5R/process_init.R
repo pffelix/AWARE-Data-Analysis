@@ -1,43 +1,12 @@
 ############################################################################################################
+#Chapter 5 Analyses: Modeling the Causal Process of Continuous Outcomes
+#Note: The code assumes that the data file process.csv has been copied to your default directory
+############################################################################################################
+
+############################################################################################################
 #load the nlme package
 library(nlme)
-library(plyr)
-library(data.table)
 ############################################################################################################
-#Integrate data from AWARE database:
-nr_par <- 50
-nr_mea <- 28
-AWARE <- subset(db,variable == "esm_boredom_stress" & (arousal == 0 | arousal == 2) & id != 10)
-Alme_sub <- AWARE
-
-# delete last devices if too much measurement points
-Alme_sub[,"id_old"] <- Alme_sub$id
-Alme_sub <- transform(Alme_sub, id=match(id, unique(id)))
-Alme_sub <- subset(Alme_sub, id <= nr_par)
-# delete last measurement points if too much measurement points
-Alme_sub <- ddply(Alme_sub, "id", function(x) head(x[order(x$timestamp_end_diff) , ],n=nr_mea))
-# calculate 1:10 intervall
-Alme_sub$usage_time <- Alme_sub$usage_time/60/(max(Alme_sub$usage_time/60)-min(Alme_sub$usage_time/60))
-# append NAs if not enough measurement points
-Alme_sub <- as.data.table(Alme_sub)[, lapply(.SD, `length<-`, nr_mea), by = id]
-# extend to size nr_par*nr_mea
-Alme_sub <- as.data.table(Alme_sub)[, lapply(.SD, `length<-`, nr_mea*nr_par)]
-# change ids to fit the Alme id 
-Alme_sub[,"id"] <- rep(seq.int(from=1, to= nr_par, by=1), each = nr_mea)
-
-
-Alme <- data.frame(id = integer(nr_par*nr_mea), time = integer(nr_par*nr_mea), time7c = numeric(nr_par*nr_mea), intimacy = numeric(nr_par*nr_mea), conflict = numeric(nr_par*nr_mea), confc = numeric(nr_par*nr_mea), confcb = numeric(nr_par*nr_mea), confcw = numeric(nr_par*nr_mea), relqual = integer(nr_par*nr_mea))
-Alme[,"id"] <- Alme_sub$id
-Alme[,"time"] <- rep(seq.int(from=0, to= nr_mea-1, by=1), nr_par)
-Alme[,"time7c"] <- (Alme[,"time"]-(nr_mea-1)/2)/7
-Alme[,"intimacy"] <- Alme_sub$usage_time
-Alme[,"conflict"] <- Alme_sub$arousal/2
-Alme[is.na(Alme)] <- 0
-Alme[,"confc"] <- Alme$conflict-mean(Alme$conflict, na.rm=TRUE)
-Alme[,"confcw"] <- Alme$conflict-aggregate(Alme$conflict, list(Alme$id), mean, na.rm=TRUE)[rep(seq_len(nrow(aggregate(Alme$conflict, list(Alme$id), mean, na.rm=TRUE))), each=nr_mea),2]
-Alme[,"confcb"] <- Alme[,"confc"] - Alme[,"confcw"]
-Alme[,"relqual"] <- rep((sample.int(2,nr_par,replace=TRUE)-1), each = nr_mea)
-process <- Alme
 
 ############################################################################################################
 #Read a csv file containing the data
@@ -55,7 +24,6 @@ par(mar=c(1,1,1,1))
 
 par(mfrow=c(4,8))
 for (i in process$id[process$time==0 & process$relqual==0]){
-  print(i)
   plot(process$time[process$id==i], process$intimacy[process$id==i], 
        ylab="Intimacy", xlab="Time", type="l", xlim=c(-1, 29), ylim=c(0,8), main=paste("id =", i, sep = " "))
 }
@@ -113,7 +81,6 @@ mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
 #Run linear growth model with AR(1) errors 
 cpmodel <- lme(fixed=intimacy ~ time7c + confcw*relqual + confcb*relqual, data=process, random=~confcw | id, correlation = corAR1())
 summary(cpmodel)
-summary_save <- summary(cpmodel)
 ############################################################################################################
 
 
@@ -121,40 +88,28 @@ summary_save <- summary(cpmodel)
 
 #Put the EBLUPs of the random effects into a separate dataet
 cfs<-ranef(cpmodel)
-cfs$id<-1:nrow(cfs) #Add in id numbers
+cfs$id<-1:66 #Add in id numbers
 #Fix the names of the EBLUPs
 names(cfs) <- make.names(names(cfs))
 names(cfs)[c(2,1)] <- c("ebslope","ebintercept")
 #create a upper-level data frame with relqual and add to data frame with EBLUPs
 cfs$relqual<-aggregate(relqual ~ id, data=process, mean)[, 2]
 #Add the fixed effects to the EBLUPs
-fix_Intercept <- as.numeric(summary_save[[4]]$fixed["(Intercept)"])
-fix_relqual <- as.numeric(summary_save[[4]]$fixed["relqual"])
-fix_confcw <- as.numeric(summary_save[[4]]$fixed["confcw"])
-fix_confcw_relqual <- as.numeric(summary_save[[4]]$fixed["confcw:relqual"])
-cfs$intercept<- (fix_Intercept + fix_relqual*cfs$relqual + cfs$ebintercept) 
-cfs$fixinter<- (fix_Intercept + fix_relqual*cfs$relqual) #not used below
-cfs$slope<- (fix_confcw + fix_confcw_relqual*cfs$relqual + cfs$ebslope)
-cfs$fixslope<- (fix_confcw + fix_confcw_relqual*cfs$relqual) #not used below
+cfs$intercept<- (4.53219977 + 0.64726123*cfs$relqual + cfs$ebintercept) 
+cfs$fixinter<- (4.53219977 + 0.64726123*cfs$relqual) #not used below
+cfs$slope<- (-2.01061871 + 1.01641068*cfs$relqual + cfs$ebslope)
+cfs$fixslope<- (-2.01061871 + 1.01641068*cfs$relqual) #not used below
+
 ############################################################################################################
 process_temp <- process
 #Merge upper-level variables with the process data frame
-process <- merge(process, cfs, all=TRUE, by="id")
-# added because of error if process.relqual(x) == cfs.relqual(y)  -> relqual
+process<-merge(process, cfs, all=TRUE, by="id")
+# added because of error
 if(all(c(process$relqual.x==process$relqual.y))){
-  warning("error 1")
-  process[,"relqual"] <- process[,"relqual.x"]
-  drops <- c("relqual.x","relqual.y")
-  process <- process[ , !(names(process) %in% drops)]
-} else {
-  # added because of further error if process.relqual(x) != cfs.relqual(y)  -> relqual(x)
-  warning("error 2")
   process[,"relqual"] <- process[,"relqual.x"]
   drops <- c("relqual.x","relqual.y")
   process <- process[ , !(names(process) %in% drops)]
 }
-
-
 #Create predicted values based on within-subject causal model (adjusting for time
 #and removing between-subjects variation)
 process$pred<-(process$intercept + process$slope*process$conflict)
@@ -258,9 +213,8 @@ quantile(cfs$slope[cfs$relqual==0], c(0.0, .05, .25, .50, .75, .95, 1.0))
 #pdf(file="lrq-five.pdf", width=14, height=3)
 par(mar=c(1,1,1,1))
 
-# Error 2: change 65 to 47
 par(mfcol=c(1,5))
-for (i in c(48, 8, 47, 46, 41)){
+for (i in c(48, 8, 65, 46, 41)){
   plot(ordprocess$conflict[ordprocess$id==i], ordprocess$intimacy[ordprocess$id==i], 
        ylab="Intimacy", xlab="Conflict", type="p", pch=1, ylim=c(0,8), main=paste("id =", i, sep = " "))
   lines(ordprocess$conflict[ordprocess$id==i], ordprocess$pred[ordprocess$id==i])
@@ -301,6 +255,4 @@ mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
 #dev.off()
 ############################################################################################################
 
-
-summary(cpmodel)
 

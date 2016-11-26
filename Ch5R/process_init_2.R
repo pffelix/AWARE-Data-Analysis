@@ -5,7 +5,7 @@ library(plyr)
 library(data.table)
 ############################################################################################################
 #Integrate data from AWARE database:
-nr_par <- 50
+nr_par <- 66
 nr_mea <- 28
 AWARE <- subset(db,variable == "esm_boredom_stress" & (arousal == 0 | arousal == 2) & id != 10)
 Alme_sub <- AWARE
@@ -32,7 +32,7 @@ Alme[,"time"] <- rep(seq.int(from=0, to= nr_mea-1, by=1), nr_par)
 Alme[,"time7c"] <- (Alme[,"time"]-(nr_mea-1)/2)/7
 Alme[,"intimacy"] <- Alme_sub$usage_time
 Alme[,"conflict"] <- Alme_sub$arousal/2
-Alme[is.na(Alme)] <- 0
+#Alme[is.na(Alme)] <- 0
 Alme[,"confc"] <- Alme$conflict-mean(Alme$conflict, na.rm=TRUE)
 Alme[,"confcw"] <- Alme$conflict-aggregate(Alme$conflict, list(Alme$id), mean, na.rm=TRUE)[rep(seq_len(nrow(aggregate(Alme$conflict, list(Alme$id), mean, na.rm=TRUE))), each=nr_mea),2]
 Alme[,"confcb"] <- Alme[,"confc"] - Alme[,"confcw"]
@@ -41,7 +41,7 @@ process <- Alme
 
 ############################################################################################################
 #Read a csv file containing the data
-process <- read.csv('C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/ch5R/process.csv')
+#process <- read.csv('C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/ch5R/process.csv')
 ############################################################################################################
 #edit because of error
 graphics.off()
@@ -111,7 +111,7 @@ mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
 
 ############################################################################################################
 #Run linear growth model with AR(1) errors 
-cpmodel <- lme(fixed=intimacy ~ time7c + confcw*relqual + confcb*relqual, data=process, random=~confcw | id, correlation = corAR1())
+cpmodel <- lme(fixed=intimacy ~ time7c + confcw*relqual + confcb*relqual, data=process, random=~confcw | id, correlation = corAR1(),na.action=na.omit)#na.action=na.omit
 summary(cpmodel)
 summary_save <- summary(cpmodel)
 ############################################################################################################

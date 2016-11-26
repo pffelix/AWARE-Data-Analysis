@@ -1,10 +1,10 @@
 
-sosci_import_function <- function(db_temp){
+sosci_import_function <- function(db_input){
   # Insert CSV from SosciSurvey into R dataframe data
   
   #data_file = file.choose()
   # setwd("./")
-  data_file = "C:/Users/Felix/Dropbox/Apps/Aware/Database/Sosci_Survey/rdata_feedback_aware_2016-11-21_11-13.csv"
+  data_file = "C:/Users/Felix/Dropbox/Apps/Aware/Database/Sosci_Survey/rdata_feedback_aware_2016-11-26_17-13.csv"
   
   data = read.table(
     file=data_file, encoding="UTF-8",
@@ -120,17 +120,17 @@ sosci_import_function <- function(db_temp){
   
   # conversion_character <- c("week_stress", "week_boredom", "feedback_overall", "feedback_app","feedback_questions","feedback_esm_identify","feedback_esm_frequency","feedback_esm_reliability","feedback_esm_intuitive","feedback_monitoring","feedback_reactivity","feedback_continue")
   # for (con in 1:length(conversion_character)) {
-  #   rows <- which(db_temp$variable == conversion_character[con])
+  #   rows <- which(db_input$variable == conversion_character[con])
   #   if (con ==4 || con==5 || con==12) {
-  #     #db_temp[rows,"value"] <- as.character(db_temp[rows,"value"])
+  #     #db_input[rows,"value"] <- as.character(db_input[rows,"value"])
   #   } else if(con == 3) {
-  #     print(db_temp[rows,"value"])
-  #     temp_Value <- as.character((db_temp[rows,"value"]))
+  #     print(db_input[rows,"value"])
+  #     temp_Value <- as.character((db_input[rows,"value"]))
   #     print(temp_Value)
-  #     db_temp[rows,"value"] <- temp_Value
+  #     db_input[rows,"value"] <- temp_Value
   #   }
   #   else{
-  #   #db_temp[rows,"value"] <- as.character(as.numeric(as.character(db_temp[rows,"value"]))+2)
+  #   #db_input[rows,"value"] <- as.character(as.numeric(as.character(db_input[rows,"value"]))+2)
   #   }
   # }
   
@@ -190,8 +190,8 @@ sosci_import_function <- function(db_temp){
     id <- which(substr(as.character(info$device_id),1,7) == substr(as.character(data_temp$device_id[j]),start=1,stop=7))
     if(length(id)==0) {
       no_id <- c(no_id,data_temp$device_id[j])
-      if (length(no_id) >3) {
-        warning("no id list is longer than on 20.11.2016")
+      if (length(no_id) >5) {
+        warning("no id list is longer than on 26.11.2016")
         
       }
       data_temp[j,"device_id"] <- NA
@@ -220,7 +220,7 @@ sosci_import_function <- function(db_temp){
   data_pre <- data.frame(matrix(0, ncol = 0, nrow = nrow(data_temp)*length(variable_name)))
   data_pre_temp <- data.frame("device_id")
   #data_pre_temp <- data.frame(matrix(0, ncol = 0, nrow = nrow(data_temp)))
-  data_pre_temp <- subset(db_temp, variable == "demographic_gender" & id==1)
+  data_pre_temp <- subset(db_input, variable == "demographic_gender" & id==1)
   data_pre_temp$value <- as.character(data_pre_temp$value)
   data_pre_temp <- data_pre_temp[rep(seq_len(nrow(data_pre_temp)), each=nrow(data_temp)),]
   data_pre_temp <- data_pre_temp[0, ]
@@ -241,11 +241,11 @@ sosci_import_function <- function(db_temp){
       if (variable_pos ==4 || variable_pos==5 || variable_pos==12 || variable_pos==13) {
         char_temp <- (as.character(data_temp[pos,variable_name[variable_pos]]))
       } else if(variable_pos == 3) {
-        #as.character(db_temp[rows,"value"])
-        #print(db_temp[rows,"value"])
-        #temp_Value <- as.character((db_temp[rows,"value"]))
+        #as.character(db_input[rows,"value"])
+        #print(db_input[rows,"value"])
+        #temp_Value <- as.character((db_input[rows,"value"]))
         #print(temp_Value)
-        #db_temp[rows,"value"] <- temp_Value
+        #db_input[rows,"value"] <- temp_Value
         char_temp <- (as.character(data_temp[pos,variable_name[variable_pos]]))
       }
       else{
@@ -266,14 +266,14 @@ sosci_import_function <- function(db_temp){
       data_pre_temp[pos_temp,"value"] <- char_temp
     }
   }
-  db_temp <- as.data.frame(rbind(db_temp, data_pre_temp))
+  db_input <- as.data.frame(rbind(db_input, data_pre_temp))
   
   
-  db_temp <- dplyr::arrange(db_temp, timestamp)
-  db_temp <- db_temp[order(db_temp[,"id"],db_temp[,"timestamp_end"]),]
-  rownames(db_temp) <- seq(length=nrow(db_temp))
+  db_input <- dplyr::arrange(db_input, timestamp)
+  db_input <- db_input[order(db_input[,"id"],db_input[,"timestamp_end"]),]
+  rownames(db_input) <- seq(length=nrow(db_input))
   
-  return(db_temp)
+  return(db_input)
 }
 
 #db_temp <- sosci_import_function(db)

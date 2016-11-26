@@ -1,13 +1,13 @@
 library(prettyR)
 theme_set(theme_grey(base_size = 16)) 
 library(psych)
-library(agricolae)
 
 # variable definition
 blu <- "#1F497D"
 lab <- c("bored","litte to do","balanced","slightly under pressure","stressed")
 labe <- c("bored","","balanced","","stressed")
 lab_at <- c(-2,-1,0,1,2)
+color_arousal <- c("green","orange",blu,"purple","brown")
 
 #### Chapter Evaluation Study method
 print("Chapter Evaluation Study method")
@@ -17,7 +17,7 @@ item <- c("week_stress","week_boredom","feedback_overall","feedback_app","feedba
 for(pos in 1:length(item)) {
   sub <- subset(db, variable == item[pos])
   print(item[pos])
-  print(describe(as.numeric(as.character(sub$value))))
+  print(describe(as.numeric(as.character(sub$value))))# mat=TRUE
   print(freq(as.character(sub$value)))
 }
 
@@ -67,16 +67,43 @@ print(table)
 sub <- subset(db, variable == "esm_boredom_stress")
 freq(as.character(sub$value))
 
-# Histogram
+# Histogram arousal state
+sub <- subset(db, variable == "esm_boredom_stress")
 ggplot(sub, aes(arousal-2)) +
-  geom_histogram(col="black", fill=blu,binwidth = 1, boundary = -0.5) +
-  #labs(x="Arousal level", y="Frequency") 
+  n        <- nrow(sub)
+  mean_v     <- mean(sub$arousal-2)
+  sd_v       <- sd(sub$arousal-2)
+  binwidth <- 1
+  ggplot(sub, aes(arousal-2)) +
+  geom_histogram( aes(),colour="black", fill=blu,binwidth = 1,boundary = -0.5) +
   scale_x_continuous(breaks=lab_at,labels=lab)+
+  stat_function(fun = function(x, mean_v, sd_v, n, bw){dnorm(x = x, mean = mean_v, sd = sd_v) * n * bw},args = c(mean = mean_v, sd = sd_v, n = n, bw = binwidth))+
   labs(x=paste0("Self-assessed arousal state (N=",arousal_N,", skew=",round(table$skew,2),", kurtosis=",round(table$kurtosis,2),")"), y="Frequency") 
-  ggsave(file="hist_ar_freq.emf")
+  ggsave(file="hist_ar_time.emf")
+  
+# Q-Q Plot arousal state
+sub <- subset(db, variable == "esm_boredom_stress")
+linearmodel.lm = lm(usage_time ~ arousal, data=sub) 
+linearmodel.lm.res=residuals(linearmodel.lm)
+shapiro.test(linearmodel.lm.res)
+linearmodel.lm.stdres = rstandard(linearmodel.lm)
+qqnorm(linearmodel.lm.stdres, ylab="Expected normal value",  xlab="Observed value", main="Normal Q-Q Plot Usage time") 
+qqline(linearmodel.lm.stdres)
 
+# Histogram balanced(filter) - usage time
+sub <- subset(db, variable == "esm_boredom_stress" & arousal==2)
+ggplot(sub, aes(usage_time/dt/60)) +
+  geom_histogram(col="black", fill=blu,binwidth = 1, boundary = -0.5) 
+  #labs(x="Arousal level", y="Frequency") 
+  #scale_x_continuous(breaks=lab_at,labels=lab)+
+  #labs(x=paste0("Self-assessed arousal state (N=",arousal_N,", skew=",round(table$skew,2),", kurtosis=",round(table$kurtosis,2),")"), y="Frequency") 
+#ggsave(file="hist_ar_freq.emf")
+
+
+  
 # cor: time increase - time_diff arousal answer
 cor.test(sub$timestamp_end_diff,sub$time_diff, alternative="greater")
+
 
 # cor: time increase - time_interval arousal answers
 arousal_diff <- c()
@@ -159,6 +186,5 @@ ggplot(onoff) + aes(x=1, y=usage_freq_day, fill=group) +
   stat_summary(fun.y = mean, geom="point",colour="darkred", size=3) +
   stat_summary(fun.data = fun_mean, geom="text", vjust=-0.7)
   ggsave(file="boxplot_usage_freq.emf")
-
 
   

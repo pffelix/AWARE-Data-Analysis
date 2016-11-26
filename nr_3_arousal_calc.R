@@ -49,8 +49,8 @@ for (dev in 1:dev_N) {
 }
 arousal_N <- sum(arousal$N)
 
-# 
-# # interpolate arousal level
+
+# interpolate arousal level
 # type = 1
 # reset = 1
 # db_temp[,"arousalp"] <- NA
@@ -63,14 +63,14 @@ arousal_N <- sum(arousal$N)
 # search_frame <- list()
 # search_frame_N <- list()
 # for(dev in 1:dev_N) {
-#   search_frame[[dev]] <- subset(db_temp, variable == "esm_boredom_stress" & id == dev) 
+#   search_frame[[dev]] <- subset(db_temp, variable == "esm_boredom_stress" & id == dev)
 #   rownames(search_frame[[dev]]) <- seq(length=nrow(search_frame[[dev]]))
 #   search_frame_N[[dev]] <- nrow(search_frame[[dev]])
 # }
 # 
 # 
 # for (pos in 1:db_N) {
-#   
+# 
 #   time <- as.numeric(db_temp$timestamp_end[pos])
 #   dev <- db_temp$id[pos]
 #   if(is.na(dev)){
@@ -114,7 +114,7 @@ arousal_N <- sum(arousal$N)
 #     time_1 <- as.numeric(search_frame[[dev]][pos_search-1,"timestamp_end"])
 #     value_2 <- search_frame[[dev]][pos_search,"arousal"]
 #     time_2 <- as.numeric(search_frame[[dev]][pos_search,"timestamp_end"])
-#     
+# 
 #     # Linear interpolation
 #     if (type==1) {
 #       arousalp = value_1 + (time-time_1)*(value_2-value_1)/(time_2-time_1)
@@ -123,7 +123,7 @@ arousal_N <- sum(arousal$N)
 #   db_temp[pos,"arousalp"] <- arousalp
 #   arousalp_z <- (arousalp - arousal$mean[dev])/arousal$sd[dev]
 #   db_temp[pos,"arousalp_z"] <- arousalp_z
-#   
+# 
 #   #print(value)
 #   reset = 1
 #   #print(dev)
@@ -142,5 +142,4 @@ col_idx <- grep("\\bid\\b", names(db_temp))
 db <- db_temp[, c(col_idx, (1:ncol(db_temp))[-col_idx])]
 
 #return(value)
-
 

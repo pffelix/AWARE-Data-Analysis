@@ -1,3 +1,6 @@
+database_path = "C:/Users/Felix/Dropbox/Apps/Aware/Database"
+date <- Sys.Date()
+
 db_sql = dbConnect(MySQL(), user=user_string, password=password_string, dbname=dbname_string, host=host_string)
 
 # Backup full database, run after Init.R

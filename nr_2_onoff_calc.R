@@ -1,25 +1,13 @@
 
 # data preparation for multi-level model  
 
-# window before measurement of mood delta t
-if (!exists("dt_min")){
-  dt_min <- 1*60*60
-}
-
-
-# window after measurement of mood delta t
-if (!exists("dt_max")){
-  dt_max <- 1*60*60
-}
-
-
-
 db_temp <- db_init
 delete_dt <- c()
 delete_arousal_wrong_dt <- c()
 delete_arousal_wrong_off <- c()
 old_time <- -Inf
-dt <- round((dt_min+dt_max)/60/60,1)
+# window factor usage
+dt <- (dt_min+dt_max)/60/60
 
 # Dele wrong db entries (mood state often answered more than one time at interval dt_t)
 
@@ -57,11 +45,14 @@ for (dev in 1:dev_N){
   sub_arousal_dev <- subset(sub_arousal, id == dev)
   name_row_dev <- rownames(sub_arousal_dev)
   for (i in 1:nrow(sub_arousal_dev)){
-    if (sub_arousal_dev$X_id[i] ==3134){
+    if (sub_arousal_dev$X_id[i] ==1183){
       #print("hall")
     }
     time_sub <- sub_arousal_dev[name_row_dev[i],"timestamp_end_diff"]
     time_min <- time_sub - dt_min
+    #if(time_min < 0){
+      #time_min <- 0
+    #}
     time_max <- time_sub + dt_max
     sub_screen_time <- subset(sub_screen, id == dev & timestamp_end_diff >= time_min & timestamp_end_diff <= time_diff+time_max, )
     
