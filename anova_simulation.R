@@ -9,8 +9,8 @@ date <- Sys.Date()
 
 
 simul_annova <- function(vector_dt_min,vector_dt_max) {
-  anova_simul_time <- data.frame(F_=NA,sig=NA,dt_min=NA,dt_max=NA,M1=NA,M2=NA,M3=NA,M4=NA,M5=NA,sig1=NA,sig2=NA,sig3=NA,sig4=NA,sig5=NA,t1=NA,t2=NA,t3=NA,t4=NA,t5=NA,p1=NA,p2=NA,p3=NA,p4=NA,p5=NA,df1=NA,df2=NA,df3=NA,df4=NA,df5=NA,N1=NA,N2=NA,N3=NA,N4=NA,N5=NA)
-  anova_simul_freq <- data.frame(F_=NA,sig=NA,dt_min=NA,dt_max=NA,M1=NA,M2=NA,M3=NA,M4=NA,M5=NA,sig1=NA,sig2=NA,sig3=NA,sig4=NA,sig5=NA,t1=NA,t2=NA,t3=NA,t4=NA,t5=NA,p1=NA,p2=NA,p3=NA,p4=NA,p5=NA,df1=NA,df2=NA,df3=NA,df4=NA,df5=NA,N1=NA,N2=NA,N3=NA,N4=NA,N5=NA)
+  anova_simul_time <- data.frame(F_=NA,sig=NA,dt_min=NA,dt_max=NA,M1=NA,M2=NA,M3=NA,M4=NA,M5=NA,sig1=NA,sig2=NA,sig3=NA,sig4=NA,sig5=NA,t1=NA,t2=NA,t3=NA,t4=NA,t5=NA,p1=NA,p2=NA,p3=NA,p4=NA,p5=NA,df1=NA,df2=NA,df3=NA,df4=NA,df5=NA,N1=NA,N2=NA,N3=NA,N4=NA,N5=NA,p_bartlett=NA,p_fligner=NA)
+  anova_simul_freq <- data.frame(F_=NA,sig=NA,dt_min=NA,dt_max=NA,M1=NA,M2=NA,M3=NA,M4=NA,M5=NA,sig1=NA,sig2=NA,sig3=NA,sig4=NA,sig5=NA,t1=NA,t2=NA,t3=NA,t4=NA,t5=NA,p1=NA,p2=NA,p3=NA,p4=NA,p5=NA,df1=NA,df2=NA,df3=NA,df4=NA,df5=NA,N1=NA,N2=NA,N3=NA,N4=NA,N5=NA,p_bartlett=NA,p_fligner=NA)
   for (test_pos in 1:length(vector_dt_min)){
     sub_state <- list()
     #print(test_pos)
@@ -37,8 +37,15 @@ simul_annova <- function(vector_dt_min,vector_dt_max) {
     state.data <- rbind(sub_state[[1]],sub_state[[2]],sub_state[[3]], sub_state[[4]],sub_state[[5]])
     state.data$usage_time <- state.data$usage_time/60/dt
     state.data$usage_freq <- state.data$usage_freq/dt
+    
+    p_bartlett_time <- bartlett.test(usage_time ~ Group, data = state.data)$p.value
+    p_bartlett_freq <- bartlett.test(usage_freq ~ Group, data = state.data)$p.value
+    p_fligner_time <- fligner.test(usage_time ~ Group, data = state.data)$p.value
+    p_fligner_freq <- fligner.test(usage_freq ~ Group, data = state.data)$p.value
+    
     anova_time <- aov(formula = usage_time ~ Group, data = state.data)
     anova_freq <- aov(formula = usage_freq ~ Group, data = state.data)
+
     sum_anova_time <- summary(anova_time)
     sum_anova_freq <- summary(anova_freq)
     sum_tukey_time <- TukeyHSD(anova_time)
@@ -112,7 +119,8 @@ simul_annova <- function(vector_dt_min,vector_dt_max) {
     anova_simul_time[test_pos,"N3"] <-sum_describe_time[[3]]$n
     anova_simul_time[test_pos,"N4"] <-sum_describe_time[[4]]$n
     anova_simul_time[test_pos,"N5"] <-sum_describe_time[[5]]$n
-
+    anova_simul_time[test_pos,"p_bartlett"] <- p_bartlett_time
+    anova_simul_time[test_pos,"p_fligner"] <- p_fligner_time
     
     
     anova_simul_freq[test_pos,"dt_min"] <-vector_dt_min[test_pos]
@@ -149,6 +157,8 @@ simul_annova <- function(vector_dt_min,vector_dt_max) {
     anova_simul_freq[test_pos,"N3"] <-sum_describe_freq[[3]]$n
     anova_simul_freq[test_pos,"N4"] <-sum_describe_freq[[4]]$n
     anova_simul_freq[test_pos,"N5"] <-sum_describe_freq[[5]]$n
+    anova_simul_freq[test_pos,"p_bartlett"] <- p_bartlett_freq
+    anova_simul_freq[test_pos,"p_fligner"] <- p_fligner_freq
 
     
     #print(anova_simul_freq[1,"N5"])
@@ -159,16 +169,16 @@ simul_annova <- function(vector_dt_min,vector_dt_max) {
 
 
 #vector in minutes
-test_vector_dt_min <- c(seq(0.25,59.75,0.25),seq(60,120,1))
-test_vector_dt_max <- c(seq(0.25,59.75,0.25),seq(60,120,1))
+test_vector_dt_min <- c(seq(0.5,59.75,0.25),seq(60,120,1))
+test_vector_dt_max <- c(seq(0.5,59.75,0.25),seq(60,120,1))
 simul_anova_list_dt <- simul_annova(test_vector_dt_min,test_vector_dt_max)
 simul_anova_time_dt <- simul_anova_list_dt[[1]]
 simul_anova_freq_dt <- simul_anova_list_dt[[2]]
 
 
 # vector in minutes
-test_vector_dt_min <- c(seq(0.50,119.50,0.50),seq(120,240,2))
-test_vector_dt_max <- rep(0,300)
+test_vector_dt_min <- c(seq(1,119.50,0.50),seq(120,240,2))
+test_vector_dt_max <- rep(0,299)
 #test_vector_dt_min <- seq(1,400,10)
 #test_vector_dt_max <- rep(0,40)
 simul_anova_list_dt_min <- simul_annova(test_vector_dt_min,test_vector_dt_max)
@@ -177,8 +187,8 @@ simul_anova_freq_dt_min <- simul_anova_list_dt_min[[2]]
 
 # vector in minutesvision
 
-test_vector_dt_min <- rep(0,300)
-test_vector_dt_max <- c(seq(0.50,119.50,0.50),seq(120,240,2))
+test_vector_dt_min <- rep(0,299)
+test_vector_dt_max <- c(seq(1,119.50,0.50),seq(120,240,2))
 #test_vector_dt_min <- rep(0,40)
 #test_vector_dt_max <- seq(1,400,10)
 simul_anova_list_dt_max <- simul_annova(test_vector_dt_min,test_vector_dt_max)
@@ -186,5 +196,5 @@ simul_anova_time_dt_max <- simul_anova_list_dt_max[[1]]
 simul_anova_freq_dt_max <- simul_anova_list_dt_max[[2]]
 
 simul_anova <- list(simul_anova_time_dt,simul_anova_freq_dt,simul_anova_time_dt_min,simul_anova_freq_dt_min,simul_anova_time_dt_max,simul_anova_freq_dt_max)
-save(simul_anova, file = paste0(database_path, "/Backup_Workspace/simul_anova", date, ".RData"))
-load(file = paste0(database_path, "/Backup_Workspace/", "simul_anova_init2016-11-24", ".RData"))
+save(simul_anova, file = paste0(database_path, "/Backup_Workspace/simul_anova_init_full", date, ".RData"))
+#load(file = paste0(database_path, "/Backup_Workspace/", "simul_anova2016-11-27_init", ".RData"))

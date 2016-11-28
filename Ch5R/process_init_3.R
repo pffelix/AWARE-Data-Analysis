@@ -52,7 +52,7 @@ process <- Alme
 
 ############################################################################################################
 #Read a csv file containing the data
-#process <- read.csv('C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/ch5R/process.csv')
+process <- read.csv('C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/ch5R/process.csv')
 colnames(process)[4] <- "dep"
 colnames(process)[5] <- "indep"
 colnames(process)[6] <- "indepc"

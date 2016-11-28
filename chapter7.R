@@ -1,9 +1,9 @@
 library(prettyR)
-theme_set(theme_grey(base_size = 16)) 
 library(psych)
 library(agricolae)
 library(ggplot2)
 library('reshape2')
+source("C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/tools.R")
 
 
 # dt_min <- 1*60*60
@@ -22,15 +22,13 @@ sub_state <- list()
 group <- factor(c("Bored","Little to do","Balanced","Slightly under pressure","Stressed"), levels = c("Bored","Little to do","Balanced","Slightly under pressure","Stressed"))
 #group <- c("bored","little to do","balanced","slightly under pressure","stressed")
 for (ar in 1:5){
-  sub_state[[ar]] <- subset(db, variable == "esm_boredom_stress" & arousal == ar-1)
-  sub_state[[ar]] <- sub_state[[ar]][,c("arousal","usage_time","usage_freq")]
+  sub_state[[ar]] <- subset(db, variable == "esm_boredom_stress" & arousal == ar-1, select=c("arousal","usage_time","usage_freq"))
 }
 state_info <- data.frame("N"=c(nrow(sub_state[[1]]),nrow(sub_state[[2]]),nrow(sub_state[[3]]),nrow(sub_state[[4]]),nrow(sub_state[[5]])))
 for (ar in 1:5){
 sub_state[[ar]][,"Group"] <- as.factor(paste0(group[ar]," (N=",state_info$N[ar],")"))
 }
-sub_arousal <- subset(db, variable == "esm_boredom_stress")
-sub_arousal <- sub_arousal[,c("arousal","usage_time","usage_freq")]
+sub_arousal <- subset(db, variable == "esm_boredom_stress", select = c("arousal","usage_time","usage_freq"))
 
 
 # table mid average influence smartphone usage
@@ -44,6 +42,19 @@ for (ar in 1:length(sub_state)){
 }
 print(describeBy(sub_arousal$usage_freq))
 
+
+# run Anova to compare group differences state - averge usage time per day (Variances are homogen as Bartlett Test  K-squared = 4.4026, p=0.3543>0.05 [filinger >0.05], df=4)
+data_anova <- rbind(sub_state[[1]],sub_state[[2]],sub_state[[3]],sub_state[[4]],sub_state[[5]])
+data_anova$usage_time <- data_anova$usage_time/60/dt
+bartlett.test(usage_time ~ Group, data = data_anova)
+anova <- aov(formula = usage_time ~ Group, data = data_anova)
+sum_anova <- summary(anova)
+print(sum_anova)
+extractAIC(anova)
+
+TukeyHSD(anova)
+describeBy(state.data$usage_time,state.data$Group)
+
 # boxplot usage time - states
 fun_mean <- function(x){
   return(data.frame(y=round(mean(x),digits=0),label=round(mean(x,na.rm=T)),digits=0))}
@@ -51,6 +62,7 @@ state.data <- rbind(sub_state[[1]], sub_state[[2]], sub_state[[3]], sub_state[[4
 #state.data$Group <- factor(state.data$Group,levels=sample(levels(state.data$Group)))
 
 ggplot(state.data, aes(x=arousal, y=usage_time/dt/60, fill=Group,order=Group)) +
+  stat_boxplot(geom ='errorbar') + 
   geom_boxplot() +
   #scale_x_discrete() + 
   xlab(paste0("Self-assessed arousal state")) +
@@ -65,6 +77,7 @@ ggplot(state.data, aes(x=arousal, y=usage_time/dt/60, fill=Group,order=Group)) +
 
 # boxplot usage freq - states
 ggplot(state.data, aes(x=arousal, y=usage_freq/dt, fill=Group,order=Group)) +
+  stat_boxplot(geom ='errorbar') + 
   geom_boxplot() +
   #scale_x_discrete() + 
   xlab(paste0("Self-assessed arousal state")) +
@@ -95,14 +108,7 @@ ggplot(data=sub_arousal, aes(x=usage_time/dt/60, y=usage_freq/dt))+
   ggsave(file="scatter_usage_time_usage_freq.emf") 
 
 
-# run Anova to compare group differences state - averge usage time per day (Variances are homogen as Bartlett Test  K-squared = 4.4026, p=0.3543, df=4)
-data_anova <- rbind(sub_state[[1]],sub_state[[2]],sub_state[[3]], sub_state[[4]],sub_state[[5]])
-data_anova$usage_time <- state.data$usage_time/60/dt
-bartlett.test(usage_time ~ Group, data = data_anova)
-anova <- aov(formula = usage_time ~ Group, data = data_anova)
-sum_anova <- summary(anova)
-TukeyHSD(anova)
-describeBy(state.data$usage_time,state.data$Group)
+
 
 
 
@@ -119,7 +125,7 @@ for (i in 1:length(plot_list)){
     geom_line(data=plot_data_anova, aes(dt_min+dt_max, rep(0.05*ylim_p,nrow(plot_data_anova)),colour ="Sig. p=.05", linetype = "Sig. p=.05")) + 
     xlab(paste0("Window length centered at arousal measurement points in min")) +
     scale_colour_manual("Legend", labels = c("Group differences: ANOVA F(df=4)", "Group differences: Sig. p", "Sig. p=.05"), values = c(blu, blu, "black")) +
-    scale_linetype_manual("Legend",values=c("solid", "dashed","dashed"),labels=c("Group differences: ANOVA F(df=4)", "Group differences: Sig. p", "Sig. p=.05")) +
+    scale_linetype_manual("Legend",values=c("solid", "dotted","dotted"),labels=c("Group differences: ANOVA F(df=4)", "Group differences: Sig. p", "Sig. p=.05")) +
     theme(legend.justification=c(0.3,0.99), legend.position=c(0.3,0.99)) +
     scale_x_continuous(breaks = round(seq(0, max(plot_data_anova$dt_min)+max(plot_data_anova$dt_max), by = 20),1)) +
     scale_y_continuous("Group differences F-Value", sec.axis = sec_axis(~ . / ylim_p, name = "Group differences p-value")

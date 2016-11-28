@@ -223,7 +223,7 @@ dt_min <- 1/6*60*60
 # Length of window in s to calculate dependent variable after measurement of independent variable delta t in seconds
 dt_max <- 1/6*60*60
 # time interval of participants answers
-one_interval <- 2*60*60
+one_interval <- 2/6*60*60
 # delete participants who extend study_period
 study_period_extend <- TRUE
 
@@ -234,11 +234,9 @@ for (pos in 1:nrow(db)) {
   db[pos,"week"] <- ceiling(time_after_signup/one_week)
   # calculate intervall_id of the measurment 
   db[pos,"interval"] <- ceiling(time_after_signup/one_interval)
-  
+  db[pos,"timestamp_end_diff"] <- time_after_signup
   if (time_after_signup > study_period){
     delete_study_week <- c(delete_study_week,pos)
-  }else{
-    db[pos,"timestamp_end_diff"] <- time_after_signup
   }
 }
 if (study_period_extend == TRUE){

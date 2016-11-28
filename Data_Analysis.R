@@ -117,4 +117,4 @@ on_off_function <- function(sensor_screen_temp){
   
 }
 
-test <- on_off_function(db_work[["screen"]])
+#test <- on_off_function(db_work[["screen"]])

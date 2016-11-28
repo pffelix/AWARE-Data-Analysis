@@ -4,6 +4,7 @@ library(nlme)
 library(plyr)
 library(data.table)
 library(psych)
+# im moment nur alle interval=2 stunden werte genommen (init ändern), nur für 2 wochen, is na entfern - korrekt?
 ############################################################################################################
 #Integrate data from AWARE database:
 variable_names <- c("dep", "indep", "third")
@@ -11,17 +12,38 @@ AWARE <- db
 # omit ids: less then 9 answers at boredom - balanced (change)
 omit_id <- c()#c(56,42,39,6) 
 
-arousal_0 <- 0
-arousal_1 <- 2
+# modify arousal of init database
+# Stressed Setting
+#AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c(NA,NA,"0",NA,"1",NA)))
+# Extended Stressed Setting
+#AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c(NA,NA,"0","1","1",NA)))
+
+# Bored Setting
+AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c("1",NA,"0",NA,NA,NA)))
+# Extended Bored Setting
+#AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c("1","1","0",NA,NA,NA)))
+
+
+# arousal_0 <- 2
+# arousal_1 <- 4
 
 # calculate new variables with database (change)
 #third:################################################################################################
 # gender
-AWARE$gender <- setDT(AWARE)[, gender := value[variable == "demographic_gender"], by = id]
+AWARE <- setDT(AWARE)[, gender := value[variable == "demographic_gender"], by = id]
+# boredom proneness
+AWARE <- setDT(AWARE)[, bored_pro := value[variable == "personality_boredom"], by = id]
+# stress proneness
+AWARE <- setDT(AWARE)[, stressed_pro := value[variable == "personality_stress"], by = id]
+# smartphone usage affection
+AWARE <- setDT(AWARE)[, smartphone_usage_affection := value[variable == "smartphone_usage_affection"], by = id]
+# personality emotionsharing
+AWARE <- setDT(AWARE)[, personality_emotionsharing := value[variable == "personality_emotionsharing"], by = id]
+
 
 
 # start preprocess (no change)
-AWARE <- subset(AWARE,variable == "esm_boredom_stress" & (arousal == arousal_0 | arousal == arousal_1) & !(id %in% omit_id))
+AWARE <- subset(AWARE,variable == "esm_boredom_stress" & (arousal == 0 | arousal == 1) & !(id %in% omit_id))
 #describeBy(subset(AWARE, select=c("id")), group="id", mat=TRUE)
 AWAREsub <- AWARE
 AWAREsub[,"id_old"] <- AWAREsub$id
@@ -29,13 +51,13 @@ AWAREsub[,"id_old"] <- AWAREsub$id
 
 # configure variables from exiting variables (change)
 #independent:##############################################################################################
-AWAREsub$arousal_0_1 <- as.integer(ifelse(AWAREsub$arousal==arousal_0,0,1))
+AWAREsub$arousal_0_1 <- as.integer(ifelse(AWAREsub$arousal==0,0,1))
 
 #dependent:################################################################################################
 # usage_time 0:10 interval
 AWAREsub$usage_time_0_10 <- AWAREsub$usage_time/max(AWAREsub$usage_time)*10
 # usage_time metric
-AWAREsub$usage_time <- AWAREsub$usage_time
+AWAREsub$usage_time <- AWAREsub$usage_time/dt/60
 # usage_freq 0:10 interval
 AWAREsub$usage_freq_0_10 <- AWAREsub$usage_freq/max(AWAREsub$usage_freq)*10
 # usage_freq metric
@@ -44,12 +66,26 @@ AWAREsub$usage_freq <- AWAREsub$usage_freq
 #third:################################################################################################
 # gender
 AWAREsub$gender_female0_male1 <- as.integer(ifelse(as.character(AWAREsub$gender)=="Female",0,1))
+# boredom proneness
+AWAREsub$bored_pro_0_1 <- as.integer(mapvalues(as.character(AWAREsub$bored_pro), c("-2","-1","0","1","2",NA), c("0","0",NA,"1","1",NA))) 
+# boredom proneness non extended
+AWAREsub$bored_pro_0_1_non_extended <- as.integer(mapvalues(as.character(AWAREsub$bored_pro), c("-2","-1","0","1","2",NA), c("0","0",NA,NA,"1",NA))) 
+# stress proneness
+AWAREsub$stressed_pro_0_1 <- as.integer(mapvalues(as.character(AWAREsub$stressed_pro), c("-2","-1","0","1","2",NA), c("0","0",NA,"1","1",NA))) 
+# stress proneness non extended
+AWAREsub$stressed_pro_0_1_non_extended <- as.integer(mapvalues(as.character(AWAREsub$stressed_pro), c("-2","-1","0","1","2",NA), c("0","0",NA,NA,"1",NA))) 
+# smartphone usage affection
+AWAREsub$smartphone_usage_affection_0_1 <- as.integer(mapvalues(as.character(AWAREsub$smartphone_usage_affection), c("-2","-1","0","1","2",NA), c(NA,NA,"0",NA,"1",NA))) 
+# personality emotionsharing
+AWAREsub$personality_emotionsharing_0_1 <- as.integer(mapvalues(as.character(AWAREsub$personality_emotionsharing), c("-2","-1","0","1","2",NA), c("0","0",NA,NA,"1",NA))) 
+
+
 
 
 # set variables:################################################################################################
 AWAREsub$indep <- AWAREsub$arousal_0_1
-AWAREsub$dep <- AWAREsub$usage_time_0_10 # usage_time
-AWAREsub$third <- AWAREsub$gender_female0_male1
+AWAREsub$dep <- AWAREsub$usage_time # usage_time
+AWAREsub$third <- AWAREsub$bored_pro_0_1
 
 
 # set max number of measurement points
@@ -59,6 +95,8 @@ nr_mea <- max(AWAREsub$interval) # automatic
 #nr_par <- 57 #66 
 nr_par <- length(unique(AWAREsub$id)) # automatic
 
+# delete entries if participant answered more than once in interval
+AWAREsub <- ddply(AWAREsub, "id", function(x) x[!duplicated(x$interval),])
 # delete last devices if too much measurement points (no change)
 AWAREsub <- transform(AWAREsub, id=match(id, unique(id)))
 AWAREsub <- subset(AWAREsub, id <= nr_par)
@@ -70,17 +108,28 @@ AWAREsub <- as.data.table(AWAREsub)[, lapply(.SD, `length<-`, nr_mea), by = id]
 AWAREsub <- as.data.table(AWAREsub)[, lapply(.SD, `length<-`, nr_mea*nr_par)]
 # make new sequency of ids (no change)
 AWAREsub[,"id"] <- rep(seq.int(from=1, to= nr_par, by=1), each = nr_mea)
+#AWAREsub <- ddply(AWAREsub, "id", function(x) for(i in nrow(x)){if(is.na(x$interval[i])){x$interval[i] <- seq[-x$interval[!is.na(x$interval)]][1]}})
+interval_pos <- c()
+seq <- rep(seq.int(from=1, to= nr_mea, by=1))
+for (i in 1:nr_par){
+  x <- subset(AWAREsub, id == i)
+  temp1 <- x$interval[!is.na(x$interval)]
+  temp2 <- seq[-x$interval[!is.na(x$interval)]]
+  interval_pos <- c(interval_pos, x$interval[!is.na(x$interval)], seq[-x$interval[!is.na(x$interval)]])
+}
+AWAREsub$interval_new <- interval_pos -1
+AWAREsub <- AWAREsub[order(id,interval_new),]
 
 process <- data.frame(id = integer(nr_par*nr_mea), time = integer(nr_par*nr_mea), time7c = numeric(nr_par*nr_mea), dep = numeric(nr_par*nr_mea), indep = numeric(nr_par*nr_mea), indepc = numeric(nr_par*nr_mea), indepcb = numeric(nr_par*nr_mea), indepcw = numeric(nr_par*nr_mea), third = integer(nr_par*nr_mea))
-process[,"id"] <- as.integer(AWAREsub$id)
-process[,"time"] <- as.integer(rep(seq.int(from=0, to= nr_mea-1, by=1), nr_par))
-process[,"time7c"] <- (process[,"time"]-(84-1)/2)/7
+process[,"id"] <- AWAREsub$id
+process[,"time"] <- AWAREsub$interval_new
+process[,"time7c"] <- (process$time/8)*7 # centered around - 7 (day 1), 7 (day 14)
 process[,"dep"] <- AWAREsub$dep
 process[,"indep"] <- AWAREsub$indep
 #process[is.na(process)] <- 0
 process[,"indepc"] <- process$indep-mean(process$indep, na.rm=TRUE) # not used later
 process[,"indepcw"] <- process$indep-aggregate(process$indep, list(process$id), mean, na.rm=TRUE)[rep(seq_len(nrow(aggregate(process$indep, list(process$id), mean, na.rm=TRUE))), each=nr_mea),2]
-process[,"indepcb"] <- process[,"indepc"] - process[,"indepcw"]
+process[,"indepcb"] <- process$indepc - process$indepcw
 process[,"third"] <- AWAREsub$third #rep((sample.int(2,nr_par,replace=TRUE)-1), each = nr_mea)
 
 ############################################################################################################
@@ -97,6 +146,13 @@ process_pre <- process
 #edit because of error
 graphics.off()
 ############################################################################################################
+#Graphic parameters
+
+id_dep_0 <- unique(process$id[process$third==0])[!is.na(unique(process$id[process$third==0]))]
+id_dep_1 <- unique(process$id[process$third==0])[!is.na(unique(process$id[process$third==1]))]
+# test if it is working: ok
+process <- process[!is.na(process$indep),] # if third much smaller N
+#########################################################################################################
 
 #Figure 5.2: Time Course Plots for Intimacy for the Low Relationship Quality Group
 
@@ -104,11 +160,12 @@ graphics.off()
 #pdf(file="lrq-intimacy-time.pdf", width=15, height=8)
 par(mar=c(1,1,1,1))
 
-par(mfrow=c(4,8))
-for (i in process$id[process$time==0 & process$third==0]){
+par(mfrow=c(6,10))
+# edit delete: process$id[process$time==0 & process$third==0]
+for (i in id_dep_0){
   print(i)
   plot(process$time[process$id==i], process$dep[process$id==i], 
-       ylab="dep", xlab="Time", type="l", xlim=c(-1, 29), ylim=c(0,8), main=paste("id =", i, sep = " "))
+       ylab="dep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(0,10), main=paste("id =", i, sep = " "))
 }
 mtext("Low Relationship Quality", side=3, outer=TRUE, line=-1.2)
 #dev.off()
@@ -117,12 +174,13 @@ mtext("Low Relationship Quality", side=3, outer=TRUE, line=-1.2)
 
 #edit because of error
 #pdf(file="hrq-intimacy-time.pdf", width=15, height=10)
-par(mar=c(1,1,1,1))
+#par(mar=c(1,1,1,1))
 
-par(mfrow=c(5,8))
-for (i in process$id[process$time==0 & process$third==1]){
+par(mfrow=c(6,10))
+# edit delete: process$id[process$time==0 & process$third==1]
+for (i in id_dep_1){
   plot(process$time[process$id==i], process$dep[process$id==i], 
-       ylab="dep", xlab="Time", type="l", xlim=c(-1, 29), ylim=c(0,8), main=paste("id =", i, sep = " "))
+       ylab="dep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(0,10), main=paste("id =", i, sep = " "))
 }
 mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
 #dev.off()
@@ -134,12 +192,13 @@ mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
 
 #edit because of error
 #pdf(file="lrq-conflict-time.pdf", width=15, height=8)
-par(mar=c(1,1,1,1))
+#par(mar=c(1,1,1,1))
 
 par(mfrow=c(4,8))
-for (i in process$id[process$time==0 & process$third==0]){
+# edit delete: process$id[process$time==0 & process$third==0]
+for (i in id_dep_0){
   plot(process$time[process$id==i], process$indep[process$id==i], 
-       ylab="indep", xlab="Time", type="l", xlim=c(-1, 29), ylim=c(-0.1, 1.1), main=paste("id =", i, sep = " "))
+       ylab="indep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(-0.1, 1.1), main=paste("id =", i, sep = " "))
 }
 mtext("Low Relationship Quality", side=3, outer=TRUE, line=-1.2)
 #dev.off()
@@ -148,12 +207,13 @@ mtext("Low Relationship Quality", side=3, outer=TRUE, line=-1.2)
 
 #edit because of error
 #pdf(file="hrq-conflict-time.pdf", width=15, height=10)
-par(mar=c(1,1,1,1))
+#par(mar=c(1,1,1,1))
 
 par(mfrow=c(5,8))
-for (i in process$id[process$time==0 & process$third==1]){
+# edit delete: process$id[process$time==0 & process$third==1]
+for (i in id_dep_1){
   plot(process$time[process$id==i], process$indep[process$id==i], 
-       ylab="indep", xlab="Time", type="l", xlim=c(-1, 29), ylim=c(-0.1, 1.1), main=paste("id =", i, sep = " "))
+       ylab="indep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(-0.1, 1.1), main=paste("id =", i, sep = " "))
 }
 mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
 #dev.off()
@@ -162,7 +222,10 @@ mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
 
 ############################################################################################################
 #Run linear growth model with AR(1) errors 
-cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit)#na.action=na.omit
+
+tryCatch(cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit), error=function(e){ warning= warning("!!!!!!!!!!convergence limit reached!!!!!!!!!!!!!")
+cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit,control = lmeControl(msMaxIter = 200, msMaxEval = 500, msVerbose = TRUE, sing.tol=1e-20))})
+cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit,control = lmeControl(msMaxIter = 200, msMaxEval = 500, sing.tol=1e-20))
 summary(cpmodel)
 summary_save <- summary(cpmodel)
 ############################################################################################################
@@ -272,7 +335,7 @@ par(mfcol=c(1,2))
 par(lwd=.5)
 #low third
 plot(process$indep[process$third==0], process$dep[process$third==0], 
-     ylab="dep", xlab="indep", type="n", ylim=c(0,8), main="Low Relationship Quality")
+     ylab="dep", xlab="indep", type="n", ylim=c(0,max(process$dep[process$third==0], na.rm=TRUE)), main="Low Relationship Quality")
 for (i in cfs$id[cfs$third==0]){
   lines(ordprocess$indep[ordprocess$id==i], ordprocess$pred[ordprocess$id==i])
 }
@@ -280,7 +343,7 @@ predl<-fix_Intercept + fix_indepcw*process$indep[process$third==0] #fixed line f
 lines(process$indep[process$third==0], predl, col="Red", lwd=4)
 #high third
 plot(process$indep[process$third==1], process$dep[process$third==1], 
-     ylab="dep", xlab="time", type="n", pch=4, ylim=c(0,8), main="High Relationship Quality")
+     ylab="dep", xlab="time", type="n", pch=4, ylim=c(0,max(process$dep[process$third==1], na.rm=TRUE)), main="High Relationship Quality")
 for (i in cfs$id[cfs$third==1]){
   lines(ordprocess$indep[ordprocess$id==i], ordprocess$pred[ordprocess$id==i])
 }
@@ -301,7 +364,7 @@ quantile_0 <- quantile(cfs$slope[cfs$third==0], c(0.0, .05, .25, .50, .75, .95, 
 # edited to flex
 cfs_table = data.table(real.val = cfs$slope, cfs)
 setkey(cfs_table, slope)
-setattr(cfs_temp,"sorted","slope") 
+setattr(cfs_table,"sorted","slope") 
 cfs_table <- cfs_table[J(quantile_0), roll = "nearest"] 
 quantile_0__5_25_75_95 <- c(cfs_table$id[2],cfs_table$id[3],cfs_table$id[4],cfs_table$id[5],cfs_table$id[6])
 ############################################################################################################
@@ -336,7 +399,7 @@ qunatile_1 <- quantile(cfs$slope[cfs$third==1], c(0.0, .05, .25, .50, .75, .95, 
 # edited to flex
 cfs_table = data.table(real.val = cfs$slope, cfs)
 setkey(cfs_table, slope)
-setattr(cfs_temp,"sorted","slope") 
+setattr(cfs_table,"sorted","slope") 
 cfs_table <- cfs_table[J(qunatile_1), roll = "nearest"] 
 quantile_1__5_25_75_95 <- c(cfs_table$id[2],cfs_table$id[3],cfs_table$id[4],cfs_table$id[5],cfs_table$id[6])
 
@@ -364,4 +427,5 @@ mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
 
 describeBy(subset(AWARE, select=c("id")), group="id", mat=TRUE)
 summary(cpmodel)
+#ranef(cpmodel)
 

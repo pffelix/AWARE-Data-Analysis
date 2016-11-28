@@ -1,6 +1,7 @@
 library(prettyR)
 theme_set(theme_grey(base_size = 16)) 
 library(psych)
+source("C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/tools.R")
 
 # variable definition
 blu <- "#1F497D"
@@ -23,7 +24,7 @@ for(pos in 1:length(item)) {
 
 
 
-# Validity scale - boredom stress week rewareded
+# Validity scale - boredom (if changed: stress) week rewareded
 
 sub <- subset(db, variable == "week_stress") 
 id_vector_bored <- sub$id
@@ -46,10 +47,72 @@ for(dev in id_vector_bored) {
 arousal_mean <- data.frame(mood_esm$id,as.numeric(as.character(mood_esm$value)))
 colnames(arousal_mean)<- c("id","value")
 arousal_mean <- aggregate(arousal_mean, list(arousal_mean$id), mean)
+id_vector_arousal <- unique(arousal_mean$id)
+id_vector_arousal <- id_vector_arousal[!is.na(id_vector_arousal)]
+mood_week <-mood_week[mood_week$id %in% id_vector_arousal, ]
+
 
 cor.test(mood_week$value+2,arousal_mean$value)
 
 
+# Validity scale - boredom stress week forwarded
+
+sub <- subset(db, variable == "week_workload_time") 
+id_vector_bored <- sub$id
+id_vector_bored <- id_vector_bored[!is.na(id_vector_bored)]
+mood_week <- sub[sub$id %in% id_vector_bored, ]
+mood_week$value <-as.numeric(as.character(mood_week$value))
+time_bored_week <- mood_week$timestamp_end_diff
+
+sub <- subset(db, variable == "esm_boredom_stress") 
+sub <- sub[sub$id %in% id_vector_bored, ]
+mood_esm <- data.frame()
+for(dev in id_vector_bored) {
+  week_dev <- subset(mood_week, id==dev) 
+  week_dev_t <- week_dev$timestamp_end_diff
+  #4print(week_dev_t)
+  delta <-7*24*60*60
+  sub_temp <- subset(sub, id == dev & timestamp_end_diff >= week_dev_t & timestamp_end_diff <= week_dev_t+delta, ) 
+  mood_esm <- rbind(mood_esm,sub_temp)
+}
+arousal_mean <- data.frame(mood_esm$id,as.numeric(as.character(mood_esm$value)))
+colnames(arousal_mean)<- c("id","value")
+arousal_mean <- aggregate(arousal_mean, list(arousal_mean$id), mean)
+id_vector_arousal <- unique(arousal_mean$id)
+id_vector_arousal <- id_vector_arousal[!is.na(id_vector_arousal)]
+mood_week <-mood_week[mood_week$id %in% id_vector_arousal, ]
+
+cor.test(mood_week$value+2,arousal_mean$value)
+
+
+# Correlation week_workload_valence - arousal state forwarded
+
+sub <- subset(db, variable == "week_workload_valence") 
+id_vector_bored <- sub$id
+id_vector_bored <- id_vector_bored[!is.na(id_vector_bored)]
+mood_week <- sub[sub$id %in% id_vector_bored, ]
+mood_week$value <-as.numeric(as.character(mood_week$value))
+time_bored_week <- mood_week$timestamp_end_diff
+
+sub <- subset(db, variable == "esm_boredom_stress" & arousal== c(2,3,4))
+sub <- sub[sub$id %in% id_vector_bored, ]
+mood_esm <- data.frame()
+for(dev in id_vector_bored) {
+  week_dev <- subset(mood_week, id==dev) 
+  week_dev_t <- week_dev$timestamp_end_diff
+  #4print(week_dev_t)
+  delta <-7*24*60*60
+  sub_temp <- subset(sub, id == dev & timestamp_end_diff >= week_dev_t & timestamp_end_diff <= week_dev_t+delta, ) 
+  mood_esm <- rbind(mood_esm,sub_temp)
+}
+arousal_mean <- data.frame(mood_esm$id,as.numeric(as.character(mood_esm$value)))
+colnames(arousal_mean)<- c("id","value")
+arousal_mean <- aggregate(arousal_mean, list(arousal_mean$id), mean)
+id_vector_arousal <- unique(arousal_mean$id)
+id_vector_arousal <- id_vector_arousal[!is.na(id_vector_arousal)]
+mood_week <-mood_week[mood_week$id %in% id_vector_arousal, ]
+
+cor.test(mood_week$value+2,arousal_mean$value)
 
 #### Chapter statistics collected data
 print("Chapter statistics collected data")
@@ -133,13 +196,51 @@ answers_per_day <- arousal$N/study_duration_days
 describe(answers_per_day)
 
 
-### screen on/off events
-sub <- subset(db, variable == "smartphone_usage_time") 
+### Measured screen on/off events
 
-## Smartphone usage per day
+## Measured Smartphone usage per day
+#total
 describeBy(24*60/onoff$freq)
+# male
+sub <- setDT(db)[, gender := value[variable == "demographic_gender"], by = id]
+sub_Male <- subset(sub, gender == "Male") 
+onoff_Male <- data.frame()
+ids <- unique(sub_Male$id)
+i <- 0
+for (dev in ids) {
+  i <- i+1
+  search_frame <- subset(sub_Male, variable == "screen" & id == dev & value == "on") 
+  row_names <- row.names(search_frame)
+  onoff_Male[i, "id"] <- dev
+  onoff_Male[i, "N"] <- nrow(search_frame)
+  onoff_Male[i, "tot"] <- sum(search_frame$time_diff)
+  onoff_Male[i, "freq"] <- search_frame$timestamp_end_diff[onoff_Male[i, "N"]]/onoff_Male[i, "tot"]
+  onoff_Male[i,"usage_time_day"] <- onoff_Male[i, "tot"]/(search_frame$timestamp_end_diff[onoff_Male[i, "N"]])*24*60*60
+  onoff_Male[i,"usage_freq_day"] <- onoff_Male[i, "N"]/(search_frame$timestamp_end_diff[onoff_Male[i, "N"]])*24*60*60
+}
+describeBy(24*60/onoff_Male$freq)
+# female
+sub_Female <- subset(sub, gender == "Female") 
+onoff_Female <- data.frame()
+ids <- unique(sub_Female$id)
+i <- 0
+for (dev in ids) {
+  i <- i+1
+  search_frame <- subset(sub_Female, variable == "screen" & id == dev & value == "on") 
+  row_names <- row.names(search_frame)
+  onoff_Female[i, "id"] <- dev
+  onoff_Female[i, "N"] <- nrow(search_frame)
+  onoff_Female[i, "tot"] <- sum(search_frame$time_diff)
+  onoff_Female[i, "freq"] <- search_frame$timestamp_end_diff[onoff_Female[i, "N"]]/onoff_Female[i, "tot"]
+  onoff_Female[i,"usage_time_day"] <- onoff_Female[i, "tot"]/(search_frame$timestamp_end_diff[onoff_Female[i, "N"]])*24*60*60
+  onoff_Female[i,"usage_freq_day"] <- onoff_Female[i, "N"]/(search_frame$timestamp_end_diff[onoff_Female[i, "N"]])*24*60*60
+}
+describeBy(24*60/onoff_Female$freq)
+# Gender differences
+t_test(onoff_Female$usage_time_day/60,onoff_Male$usage_time_day/60)
 
 ## self-assed smartphone usage per day
+sub <- subset(db, variable == "smartphone_usage_time") 
 describeBy(as.numeric(as.character(sub$value)))
 
 ## Correlation self assesed - actual smartphone usage time

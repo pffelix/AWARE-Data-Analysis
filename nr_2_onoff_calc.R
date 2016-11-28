@@ -78,10 +78,13 @@ for (dev in 1:dev_N){
     }
 
     usage_freq <- c(usage_freq,nrow(sub_screen_time))
-    # correct AWARE error in database high frequency [366] in milliseconds change 
-    if (sub_arousal_dev$X_id[i] == 6041 & usage_freq[length(usage_freq)] >100){
-      usage_freq[length(usage_freq)] <- usage_freq[length(usage_freq)] - (351-17)
-    }    
+    # correct AWARE error: database entries with usage frequencys in milliseconds change set to 60/h max
+    #if (sub_arousal_dev$X_id[i] == 6041 & usage_freq[length(usage_freq)]/dt >100){
+      #usage_freq[length(usage_freq)] <- usage_freq[length(usage_freq)] - (351-17)
+    #} 
+    if (usage_freq[length(usage_freq)] >61*dt){
+      usage_freq[length(usage_freq)] <- 61*dt
+    } 
     usage_time <- c(usage_time, sum(sub_screen_time$time_diff))
     #print (position)
   }
