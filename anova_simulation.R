@@ -1,5 +1,4 @@
 library(prettyR)
-theme_set(theme_grey(base_size = 16)) 
 library(psych)
 library(agricolae)
 database_path = "C:/Users/Felix/Dropbox/Apps/Aware/Database"

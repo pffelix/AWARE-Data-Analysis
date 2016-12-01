@@ -9,17 +9,18 @@ library(psych)
 #Integrate data from AWARE database:
 variable_names <- c("dep", "indep", "third")
 AWARE <- db
+#AWARE <- subset(AWARE, timestamp_end_diff < 60*60*24*7)
 # omit ids: less then 9 answers at boredom - balanced (change)
 omit_id <- c()#c(56,42,39,6) 
 
 # modify arousal of init database
 # Stressed Setting
-#AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c(NA,NA,"0",NA,"1",NA)))
+AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c(NA,NA,"0",NA,"1",NA)))
 # Extended Stressed Setting
 #AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c(NA,NA,"0","1","1",NA)))
 
 # Bored Setting
-AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c("1",NA,"0",NA,NA,NA)))
+#AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c("1",NA,"0",NA,NA,NA)))
 # Extended Bored Setting
 #AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c("1","1","0",NA,NA,NA)))
 
@@ -32,15 +33,38 @@ AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2"
 # gender
 AWARE <- setDT(AWARE)[, gender := value[variable == "demographic_gender"], by = id]
 # boredom proneness
-AWARE <- setDT(AWARE)[, bored_pro := value[variable == "personality_boredom"], by = id]
+AWARE <- setDT(AWARE)[, bored_pro := as.numeric(as.character(value[variable == "personality_boredom"])), by = id]
 # stress proneness
-AWARE <- setDT(AWARE)[, stressed_pro := value[variable == "personality_stress"], by = id]
+AWARE <- setDT(AWARE)[, stressed_pro := as.numeric(as.character(value[variable == "personality_stress"])), by = id]
 # smartphone usage affection
-AWARE <- setDT(AWARE)[, smartphone_usage_affection := value[variable == "smartphone_usage_affection"], by = id]
+AWARE <- setDT(AWARE)[, smartphone_usage_affection := as.numeric(as.character(value[variable == "smartphone_usage_affection"])), by = id]
 # personality emotionsharing
-AWARE <- setDT(AWARE)[, personality_emotionsharing := value[variable == "personality_emotionsharing"], by = id]
+AWARE <- setDT(AWARE)[, personality_emotionsharing := as.numeric(as.character(value[variable == "personality_emotionsharing"])), by = id]
 
+# Personality conscientiousness
+AWARE <- setDT(AWARE)[, personality_conscientiousness_1_r := value[variable == "personality_conscientiousness_1_r"], by = id]
+AWARE <- setDT(AWARE)[, personality_conscientiousness_2 := value[variable == "personality_conscientiousness_2"], by = id]
+AWARE[,"personality_conscientiousness"] <- (as.numeric(as.character(AWARE$personality_conscientiousness_1_r))*-1 +as.numeric(as.character(AWARE$personality_conscientiousness_2)))/2
 
+# Personality neuroticism
+AWARE <- setDT(AWARE)[, personality_neuroticism_2 := value[variable == "personality_neuroticism_2"], by = id]
+AWARE <- setDT(AWARE)[, personality_neuroticism_1_r := value[variable == "personality_neuroticism_1_r"], by = id]
+AWARE[,"personality_neuroticism"] <- (as.numeric(as.character(AWARE$personality_neuroticism_1_r))*-1 +as.numeric(as.character(AWARE$personality_neuroticism_2)))/2
+
+# Personality extraversion
+AWARE <- setDT(AWARE)[, personality_extraversion_1_r := value[variable == "personality_extraversion_1_r"], by = id]
+AWARE <- setDT(AWARE)[, personality_extraversion_2 := value[variable == "personality_extraversion_2"], by = id]
+AWARE[,"personality_extraversion"] <- (as.numeric(as.character(AWARE$personality_extraversion_1_r))*-1 +as.numeric(as.character(AWARE$personality_extraversion_2)))/2
+
+# Personality agreeableness
+AWARE <- setDT(AWARE)[, personality_agreeableness_1 := value[variable == "personality_agreeableness_1"], by = id]
+AWARE <- setDT(AWARE)[, personality_agreeableness_2_r := value[variable == "personality_agreeableness_2_r"], by = id]
+AWARE[,"personality_agreeableness"] <- (as.numeric(as.character(AWARE$personality_agreeableness_2_r))*-1 +as.numeric(as.character(AWARE$personality_agreeableness_1)))/2
+
+# Personality openness
+AWARE <- setDT(AWARE)[, personality_openness_1_r := value[variable == "personality_openness_1_r"], by = id]
+AWARE <- setDT(AWARE)[, personality_openness_2 := value[variable == "personality_openness_2"], by = id]
+AWARE[,"personality_openness"] <- (as.numeric(as.character(AWARE$personality_openness_1_r))*-1 +as.numeric(as.character(AWARE$personality_openness_2)))/2
 
 # start preprocess (no change)
 AWARE <- subset(AWARE,variable == "esm_boredom_stress" & (arousal == 0 | arousal == 1) & !(id %in% omit_id))
@@ -66,6 +90,8 @@ AWAREsub$usage_freq <- AWAREsub$usage_freq
 #third:################################################################################################
 # gender
 AWAREsub$gender_female0_male1 <- as.integer(ifelse(as.character(AWAREsub$gender)=="Female",0,1))
+# week
+AWAREsub$week_0_1 <- as.integer(ifelse(AWAREsub$timestamp_end_diff < 60*60*24*7,0,1))
 # boredom proneness
 AWAREsub$bored_pro_0_1 <- as.integer(mapvalues(as.character(AWAREsub$bored_pro), c("-2","-1","0","1","2",NA), c("0","0",NA,"1","1",NA))) 
 # boredom proneness non extended
@@ -78,15 +104,25 @@ AWAREsub$stressed_pro_0_1_non_extended <- as.integer(mapvalues(as.character(AWAR
 AWAREsub$smartphone_usage_affection_0_1 <- as.integer(mapvalues(as.character(AWAREsub$smartphone_usage_affection), c("-2","-1","0","1","2",NA), c(NA,NA,"0",NA,"1",NA))) 
 # personality emotionsharing
 AWAREsub$personality_emotionsharing_0_1 <- as.integer(mapvalues(as.character(AWAREsub$personality_emotionsharing), c("-2","-1","0","1","2",NA), c("0","0",NA,NA,"1",NA))) 
-
+# Personality conscientiousness
+AWAREsub$personality_conscientiousness_0_1 <- as.integer(mapvalues(as.character(AWAREsub$personality_conscientiousness), c("-2","-1.5","-1","-0.5","0","0.5","1","1.5","2",NA), c("0","0","0",NA,NA,NA,"1","1","1",NA)))
+# Personality neuroticism
+AWAREsub$personality_neuroticism_0_1 <- as.integer(mapvalues(as.character(AWAREsub$personality_neuroticism), c("-2","-1.5","-1","-0.5","0","0.5","1","1.5","2",NA), c("0","0","0",NA,NA,NA,"1","1","1",NA)))
+# Personality extraversion
+AWAREsub$personality_extraversion_0_1 <- as.integer(mapvalues(as.character(AWAREsub$personality_extraversion), c("-2","-1.5","-1","-0.5","0","0.5","1","1.5","2",NA), c("0","0","0",NA,NA,NA,"1","1","1",NA)))
+# Personality agreeableness
+AWAREsub$personality_agreeableness_0_1 <- as.integer(mapvalues(as.character(AWAREsub$personality_agreeableness), c("-2","-1.5","-1","-0.5","0","0.5","1","1.5","2",NA), c("0","0","0",NA,NA,NA,"1","1","1",NA)))
+# Personality openness
+AWAREsub$personality_openness_0_1 <- as.integer(mapvalues(as.character(AWAREsub$personality_openness), c("-2","-1.5","-1","-0.5","0","0.5","1","1.5","2",NA), c("0","0","0",NA,NA,NA,"1","1","1",NA)))
+# Personality window
+#window_0_1
 
 
 
 # set variables:################################################################################################
 AWAREsub$indep <- AWAREsub$arousal_0_1
 AWAREsub$dep <- AWAREsub$usage_time # usage_time
-AWAREsub$third <- AWAREsub$bored_pro_0_1
-
+AWAREsub$third <- AWAREsub$week_0_1
 
 # set max number of measurement points
 #nr_mea <- 60 #27 # automatic
@@ -96,7 +132,7 @@ nr_mea <- max(AWAREsub$interval) # automatic
 nr_par <- length(unique(AWAREsub$id)) # automatic
 
 # delete entries if participant answered more than once in interval
-AWAREsub <- ddply(AWAREsub, "id", function(x) x[!duplicated(x$interval),])
+AWAREsub <- ddply(AWAREsub, c("id","third"), function(x) x[!duplicated(x$interval),])
 # delete last devices if too much measurement points (no change)
 AWAREsub <- transform(AWAREsub, id=match(id, unique(id)))
 AWAREsub <- subset(AWAREsub, id <= nr_par)
@@ -108,6 +144,7 @@ AWAREsub <- as.data.table(AWAREsub)[, lapply(.SD, `length<-`, nr_mea), by = id]
 AWAREsub <- as.data.table(AWAREsub)[, lapply(.SD, `length<-`, nr_mea*nr_par)]
 # make new sequency of ids (no change)
 AWAREsub[,"id"] <- rep(seq.int(from=1, to= nr_par, by=1), each = nr_mea)
+# give NAs a intervall number night used yet by real measurement points
 #AWAREsub <- ddply(AWAREsub, "id", function(x) for(i in nrow(x)){if(is.na(x$interval[i])){x$interval[i] <- seq[-x$interval[!is.na(x$interval)]][1]}})
 interval_pos <- c()
 seq <- rep(seq.int(from=1, to= nr_mea, by=1))
@@ -123,7 +160,7 @@ AWAREsub <- AWAREsub[order(id,interval_new),]
 process <- data.frame(id = integer(nr_par*nr_mea), time = integer(nr_par*nr_mea), time7c = numeric(nr_par*nr_mea), dep = numeric(nr_par*nr_mea), indep = numeric(nr_par*nr_mea), indepc = numeric(nr_par*nr_mea), indepcb = numeric(nr_par*nr_mea), indepcw = numeric(nr_par*nr_mea), third = integer(nr_par*nr_mea))
 process[,"id"] <- AWAREsub$id
 process[,"time"] <- AWAREsub$interval_new
-process[,"time7c"] <- (process$time/8)*7 # centered around - 7 (day 1), 7 (day 14)
+process[,"time7c"] <- (process$time/(nr_mea/2)-1)*7 # centered around - 7 (day 1), 7 (day 14)
 process[,"dep"] <- AWAREsub$dep
 process[,"indep"] <- AWAREsub$indep
 #process[is.na(process)] <- 0
@@ -153,79 +190,79 @@ id_dep_1 <- unique(process$id[process$third==0])[!is.na(unique(process$id[proces
 # test if it is working: ok
 process <- process[!is.na(process$indep),] # if third much smaller N
 #########################################################################################################
-
-#Figure 5.2: Time Course Plots for Intimacy for the Low Relationship Quality Group
-
-#edit because of error
-#pdf(file="lrq-intimacy-time.pdf", width=15, height=8)
-par(mar=c(1,1,1,1))
-
-par(mfrow=c(6,10))
-# edit delete: process$id[process$time==0 & process$third==0]
-for (i in id_dep_0){
-  print(i)
-  plot(process$time[process$id==i], process$dep[process$id==i], 
-       ylab="dep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(0,10), main=paste("id =", i, sep = " "))
-}
-mtext("Low Relationship Quality", side=3, outer=TRUE, line=-1.2)
-#dev.off()
-
-#Figure 5.2: Time Course Plots for Intimacy for the High Relationship Quality Group
-
-#edit because of error
-#pdf(file="hrq-intimacy-time.pdf", width=15, height=10)
-#par(mar=c(1,1,1,1))
-
-par(mfrow=c(6,10))
-# edit delete: process$id[process$time==0 & process$third==1]
-for (i in id_dep_1){
-  plot(process$time[process$id==i], process$dep[process$id==i], 
-       ylab="dep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(0,10), main=paste("id =", i, sep = " "))
-}
-mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
-#dev.off()
-############################################################################################################
-
-############################################################################################################
-
-#Figure 5.2: Time Course Plots for Conflict for the Low Relationship Quality Group
-
-#edit because of error
-#pdf(file="lrq-conflict-time.pdf", width=15, height=8)
-#par(mar=c(1,1,1,1))
-
-par(mfrow=c(4,8))
-# edit delete: process$id[process$time==0 & process$third==0]
-for (i in id_dep_0){
-  plot(process$time[process$id==i], process$indep[process$id==i], 
-       ylab="indep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(-0.1, 1.1), main=paste("id =", i, sep = " "))
-}
-mtext("Low Relationship Quality", side=3, outer=TRUE, line=-1.2)
-#dev.off()
-
-#Figure 5.2: Time Course Plots for Conflict for the High Relationship Quality Group
-
-#edit because of error
-#pdf(file="hrq-conflict-time.pdf", width=15, height=10)
-#par(mar=c(1,1,1,1))
-
-par(mfrow=c(5,8))
-# edit delete: process$id[process$time==0 & process$third==1]
-for (i in id_dep_1){
-  plot(process$time[process$id==i], process$indep[process$id==i], 
-       ylab="indep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(-0.1, 1.1), main=paste("id =", i, sep = " "))
-}
-mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
-#dev.off()
+# 
+# #Figure 5.2: Time Course Plots for Intimacy for the Low Relationship Quality Group
+# 
+# #edit because of error
+# #pdf(file="lrq-intimacy-time.pdf", width=15, height=8)
+# par(mar=c(1,1,1,1))
+# 
+# par(mfrow=c(6,10))
+# # edit delete: process$id[process$time==0 & process$third==0]
+# for (i in id_dep_0){
+#   print(i)
+#   plot(process$time[process$id==i], process$dep[process$id==i], 
+#        ylab="dep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(0,10), main=paste("id =", i, sep = " "))
+# }
+# mtext("Low Relationship Quality", side=3, outer=TRUE, line=-1.2)
+# #dev.off()
+# 
+# #Figure 5.2: Time Course Plots for Intimacy for the High Relationship Quality Group
+# 
+# #edit because of error
+# #pdf(file="hrq-intimacy-time.pdf", width=15, height=10)
+# #par(mar=c(1,1,1,1))
+# 
+# par(mfrow=c(6,10))
+# # edit delete: process$id[process$time==0 & process$third==1]
+# for (i in id_dep_1){
+#   plot(process$time[process$id==i], process$dep[process$id==i], 
+#        ylab="dep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(0,10), main=paste("id =", i, sep = " "))
+# }
+# mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
+# #dev.off()
+# ############################################################################################################
+# 
+# ############################################################################################################
+# 
+# #Figure 5.2: Time Course Plots for Conflict for the Low Relationship Quality Group
+# 
+# #edit because of error
+# #pdf(file="lrq-conflict-time.pdf", width=15, height=8)
+# #par(mar=c(1,1,1,1))
+# 
+# par(mfrow=c(4,8))
+# # edit delete: process$id[process$time==0 & process$third==0]
+# for (i in id_dep_0){
+#   plot(process$time[process$id==i], process$indep[process$id==i], 
+#        ylab="indep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(-0.1, 1.1), main=paste("id =", i, sep = " "))
+# }
+# mtext("Low Relationship Quality", side=3, outer=TRUE, line=-1.2)
+# #dev.off()
+# 
+# #Figure 5.2: Time Course Plots for Conflict for the High Relationship Quality Group
+# 
+# #edit because of error
+# #pdf(file="hrq-conflict-time.pdf", width=15, height=10)
+# #par(mar=c(1,1,1,1))
+# 
+# par(mfrow=c(5,8))
+# # edit delete: process$id[process$time==0 & process$third==1]
+# for (i in id_dep_1){
+#   plot(process$time[process$id==i], process$indep[process$id==i], 
+#        ylab="indep", xlab="Time", type="l", xlim=c(-1, nr_mea), ylim=c(-0.1, 1.1), main=paste("id =", i, sep = " "))
+# }
+# mtext("High Relationship Quality", side=3, outer=TRUE, line=-1.2)
+# #dev.off()
 ############################################################################################################
 
 
 ############################################################################################################
 #Run linear growth model with AR(1) errors 
-
+#tryCatch(cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit), error=function(e){ warning= warning("!!!!!!!!!!convergence limit reached!!!!!!!!!!!!!")
 tryCatch(cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit), error=function(e){ warning= warning("!!!!!!!!!!convergence limit reached!!!!!!!!!!!!!")
 cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit,control = lmeControl(msMaxIter = 200, msMaxEval = 500, msVerbose = TRUE, sing.tol=1e-20))})
-cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit,control = lmeControl(msMaxIter = 200, msMaxEval = 500, sing.tol=1e-20))
+#cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit,control = lmeControl(msMaxIter = 200, msMaxEval = 500, sing.tol=1e-20))
 summary(cpmodel)
 summary_save <- summary(cpmodel)
 ############################################################################################################

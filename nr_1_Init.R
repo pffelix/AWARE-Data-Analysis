@@ -221,9 +221,9 @@ one_week <- 7*24*60*60
 # Length of window in s to calculate dependent variable before measurement of independent variable delta t in seconds
 dt_min <- 1/6*60*60
 # Length of window in s to calculate dependent variable after measurement of independent variable delta t in seconds
-dt_max <- 1/6*60*60
+dt_max <- 0*60*60
 # time interval of participants answers
-one_interval <- 2/6*60*60
+one_interval <- 1/6*60*60
 # delete participants who extend study_period
 study_period_extend <- TRUE
 

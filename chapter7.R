@@ -128,17 +128,17 @@ for (i in 1:length(plot_list)){
     scale_linetype_manual("Legend",values=c("solid", "dotted","dotted"),labels=c("Group differences: ANOVA F(df=4)", "Group differences: Sig. p", "Sig. p=.05")) +
     theme(legend.justification=c(0.3,0.99), legend.position=c(0.3,0.99)) +
     scale_x_continuous(breaks = round(seq(0, max(plot_data_anova$dt_min)+max(plot_data_anova$dt_max), by = 20),1)) +
-    scale_y_continuous("Group differences F-Value", sec.axis = sec_axis(~ . / ylim_p, name = "Group differences p-value")
+    scale_y_continuous("F-Value", sec.axis = sec_axis(~ . / ylim_p, name = "p-value")
     ))
     ggsave(file=paste0(as.character(plot_name[[i]]),"_Anova.emf"))
 }
 
 # Plot group mean and duncan sig over time window (total time)
-plot_list <-list(simul_anova_time_dt,simul_anova_freq_dt)
-plot_name <- list(deparse(substitute(simul_anova_time_dt)),deparse(substitute(simul_anova_freq_dt)))
+plot_list <-list(simul_anova_time_dt_min,simul_anova_time_dt_max,simul_anova_time_dt, simul_anova_freq_dt_min, simul_anova_freq_dt_max, simul_anova_freq_dt)
+plot_name <- list(deparse(substitute(simul_anova_time_dt_min)),deparse(substitute(simul_anova_time_dt_max)),deparse(substitute(simul_anova_time_dt)),deparse(substitute(simul_anova_freq_dt_min)),deparse(substitute(simul_anova_freq_dt_max)),deparse(substitute(simul_anova_freq_dt)))
 legend_name <- c("Mean: Bored","Mean: Little to do","Mean: Balanced","Mean: Slightly under pressure","Mean: Stressed","Sig. differences: Bored - balanced","Sig. differences: Little to do - balanced","Sig. differences: Slightly under pressure - balanced","Sig. differences: Stressed - balanced","Sig. p=.05")
 breaks_point <- c(1:10)
-cols <- c("green","orange","blue", "red", "purple","green","orange" ,"red", "purple", "black")
+cols <- c("green","orange", "red","blue", "purple","green","orange","blue", "purple", "black")
 line_type <- c("solid", "solid","solid","solid","solid","dashed", "dashed","dashed","dashed","dashed")
 line_size <- c(1,1,1,1,1,1,1,1,1,0.5)
 #linetype_vector <- legend_vector
@@ -169,10 +169,62 @@ for (i in 1:length(plot_list)){
      guides(colour=guide_legend("Group",nrow=5,ncol=2)) +
      theme(legend.position="top", legend.direction = "vertical") +
      scale_x_continuous(limits=c(xlim_m,xlim_p), breaks = round(seq(xlim_m, max(plot_data_anova$dt_min)+max(plot_data_anova$dt_max), by = 20),1)) +
-     scale_y_continuous(legend_entry, limits=c(0,ylim_p), sec.axis = sec_axis(~ . / (ylim_p), name = "Post-Hoc(Tukey) p-value")
+     scale_y_continuous(legend_entry, limits=c(0,ylim_p), sec.axis = sec_axis(~ . / (ylim_p), name = "p-value Post-Hoc(Tukey)")
      )
     )
   ggsave(file=paste0(as.character(plot_name[[i]]),"_Mean.emf")) 
+}
+
+  
+# Plot group difference to balanced and duncan sig over time window (total time)
+plot_list <-list(simul_anova_time_dt_min,simul_anova_time_dt_max,simul_anova_time_dt, simul_anova_freq_dt_min, simul_anova_freq_dt_max, simul_anova_freq_dt)
+plot_name <- list(deparse(substitute(simul_anova_time_dt_min)),deparse(substitute(simul_anova_time_dt_max)),deparse(substitute(simul_anova_time_dt)),deparse(substitute(simul_anova_freq_dt_min)),deparse(substitute(simul_anova_freq_dt_max)),deparse(substitute(simul_anova_freq_dt)))
+legend_name <- c("Differences: Bored - balanced","Differences: Little to do - balanced","Differences: Slightly under pressure - balanced","Differences: Stressed - balanced","Sig. differences: Bored - balanced","Sig. differences: Little to do - balanced","Sig. differences: Slightly under pressure - balanced","Sig. differences: Stressed - balanced","Sig. differences: Bored - stressed","Sig. p=.05")
+breaks_point <- c(1:10)
+cols <- c("green","orange", "blue", "purple","green","orange","blue", "purple", "red","black")
+line_type <- c("solid", "solid","solid","solid","solid", "solid","solid","solid","solid","dotted")
+line_size <- c(2,2,2,2,0.5,0.5,0.5,0.5,0.5,0.5)
+line_shape <- c(1,1,1,1,5,5,5,5,5,1)
+#linetype_vector <- legend_vector
+p_sig_scale <- 1 # if 5% sig -> 20
+for (i in 1:length(plot_list)){
+  plot_data_anova <-plot_list[[i]]
+  plot_data_anova$M1 <- (plot_data_anova$M1-plot_data_anova$M3)/plot_data_anova$M3*100
+  plot_data_anova$M2 <- (plot_data_anova$M2-plot_data_anova$M3)/plot_data_anova$M3*100
+  plot_data_anova$M3 <- plot_data_anova$M3
+  plot_data_anova$M4 <- (plot_data_anova$M4-plot_data_anova$M3)/plot_data_anova$M3*100
+  plot_data_anova$M5 <- (plot_data_anova$M5-plot_data_anova$M3)/plot_data_anova$M3*100
+  if (grepl("freq",plot_name[[i]])){
+    legend_entry <- "Usage frequency differences in %"
+  }else{
+    legend_entry <- "Usage time differences in %"
+  }
+  xlim_p <- max(plot_data_anova$dt_min+plot_data_anova$dt_max)
+  xlim_m <- 5
+  plot_data_anova_ylim <- subset(plot_data_anova, dt_min+dt_max >=xlim_m)
+  ylim_m <- floor(min(c(plot_data_anova_ylim$M1,plot_data_anova_ylim$M2,plot_data_anova_ylim$M4,plot_data_anova_ylim$M5)))
+  ylim_p <- ceiling(max(c(plot_data_anova_ylim$M1,plot_data_anova_ylim$M2,plot_data_anova_ylim$M4,plot_data_anova_ylim$M5)))
+  plot_data_anova$sig1 <- plot_data_anova$p1*ylim_p*p_sig_scale
+  plot_data_anova$sig2 <- plot_data_anova$p2*ylim_p*p_sig_scale
+  plot_data_anova$sig3 <- plot_data_anova$p3*ylim_p*p_sig_scale
+  plot_data_anova$sig4 <- plot_data_anova$p4*ylim_p*p_sig_scale
+  plot_data_anova$sig5 <- plot_data_anova$p5*ylim_p*p_sig_scale
+  plot_data_anova[,"p"] <- rep(0.05*(ylim_p),nrow(plot_data_anova))*p_sig_scale
+  melted <- melt(plot_data_anova, variable.name="Group", id=c("dt_min","dt_max"),measure.vars=c("M1","M2","M4","M5","sig1","sig2","sig3","sig4","sig5","p"))
+  print(ggplot(data=melted) +
+          geom_line(aes(dt_min+dt_max, y=value, group=Group,colour=Group, size=Group, linetype=Group,shape=Group)) +
+          xlab(paste0("Window length centered at arousal measurement points in min")) +
+          scale_colour_manual("Group",label= legend_name, values= cols) +
+          scale_linetype_manual("Group",label= legend_name, values=line_type) +
+          scale_shape_manual("Group",label= legend_name, values=line_shape) +
+          scale_size_manual ("Group",label= legend_name, values=line_size) +
+          guides(colour=guide_legend("Group",nrow=5,ncol=2)) +
+          theme(legend.position="top", legend.direction = "vertical") +
+          scale_x_continuous(limits=c(xlim_m,xlim_p), breaks = round(seq(xlim_m, max(plot_data_anova$dt_min)+max(plot_data_anova$dt_max), by = 20),1)) +
+          scale_y_continuous(legend_entry, limits=c(ylim_m,ylim_p), sec.axis = sec_axis(~ . / (ylim_p*p_sig_scale), name = "p-value Post-Hoc(Tukey)")
+          )
+  )
+  ggsave(file=paste0(as.character(plot_name[[i]]),"_Differences.emf")) 
 }
 
 # Plot group mean and duncan sig over time window (limited time)
@@ -180,7 +232,7 @@ plot_list <-list(simul_anova_time_dt,simul_anova_freq_dt)
 plot_name <- list(deparse(substitute(simul_anova_time_dt)),deparse(substitute(simul_anova_freq_dt)))
 legend_name <- c("Mean: Bored","Mean: Little to do","Mean: Balanced","Mean: Slightly under pressure","Mean: Stressed","Sig. differences: Bored - balanced","Sig. differences: Little to do - balanced","Sig. differences: Slightly under pressure - balanced","Sig. differences: Stressed - balanced","Sig. p=.05")
 breaks_point <- c(1:10)
-cols <- c("green","orange","blue", "red", "purple","green","orange" ,"red", "purple", "black")
+cols <- c("green","orange", "red","blue", "purple","green","orange","blue", "purple", "black")
 line_type <- c("solid", "solid","solid","solid","solid","dashed", "dashed","dashed","dashed","dashed")
 line_type <- c("solid", "solid","solid","solid","solid","dashed", "dashed","dashed","dashed","dashed")
 line_size <- c(1,1,1,1,1,1,1,1,1,0.5)
@@ -303,3 +355,21 @@ ggplot(data=sub_arousal, aes(x=arousal_z, y=usage_freq/dt))+
 #   theme(legend.justification=c(0.99,0.99), legend.position=c(0.99,0.99))
 #   #ggsave(file="scatter_arousal_usage_time_linear_interpol.emf")
 # 
+
+# check if correlation exist between z arousal and usage time / freq (no interesting effect)
+sub_bored <- subset(db, arousal_z <0)
+sub_stressed <- subset(db, arousal_z >0)
+cor <- cor.test(sub_stressed$arousal_z,sub_stressed$usage_time/60/dt)
+#ggplot(data=sub_bored, aes(arousal_z,usage_time/60/dt))+
+ggplot(data=sub_stressed, aes(arousal_z,usage_freq/dt))+
+  geom_point(color=blu) +
+  xlab(paste0("Z-value self-assed arousal state"," (N=",nrow(sub_stressed),")")) +
+  ylab(paste0("Daytime smartphone usage in min/h"," (N=",nrow(sub_stressed),")")) +
+  #geom_point(shape=1)+
+  geom_smooth(method=loess,aes(colour="Non parametric LOESS regression curve")) +
+  stat_smooth(method="lm",fill=NA,colour="black",linetype=2,geom="ribbon") +
+  geom_smooth(method=lm, aes(fill = "95%",colour=paste0("Linear regression curve r(",cor["parameter"],")=",round(as.numeric(cor["estimate"]),2),", p<.001"))) +
+  scale_colour_manual(name="Legend", values=c("black", "red"), position="top")+
+  scale_fill_grey(name = 'Confidence level') +
+  theme(legend.justification=c(0.99,0.99), legend.position=c(0.99,0.99))
+  
