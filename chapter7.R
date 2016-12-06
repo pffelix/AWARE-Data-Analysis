@@ -2,9 +2,14 @@ library(prettyR)
 library(psych)
 library(agricolae)
 library(ggplot2)
+library(cowplot)
+library(clinfun)
+library(pgirmess)
+library(FSA)
+library(car)
 library('reshape2')
 source("C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/tools.R")
-
+setwd("C:/Users/Felix/Dropbox/Exchange/Universitaet/WS 16_17 KW/BA/Ausarbeitung/7. Thesis/Plots")
 
 # dt_min <- 1*60*60
 # dt_max <- 1*60*60
@@ -14,8 +19,8 @@ source("C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/tools.R")
 # variable definition
 blu <- "#1F497D"
 graphics.off()
-color_arousal <- c("green","orange","blue","purple","brown")
-
+color_arousal <- c(blu,'#43a2ca','#7bccc4','#bae4bc','#f0f9e8')
+color_2 <- c('#ffffd4','#fed98e','#fe9929','#d95f0e','#993404')
 #### Chapter Correlation boredom, smartphone usage
 print("Chapter Evaluation Study method")
 sub_state <- list()
@@ -26,7 +31,7 @@ for (ar in 1:5){
 }
 state_info <- data.frame("N"=c(nrow(sub_state[[1]]),nrow(sub_state[[2]]),nrow(sub_state[[3]]),nrow(sub_state[[4]]),nrow(sub_state[[5]])))
 for (ar in 1:5){
-sub_state[[ar]][,"Group"] <- as.factor(paste0(group[ar]," (N=",state_info$N[ar],")"))
+sub_state[[ar]][,"Group"] <- as.factor(paste0(group[ar],"\n (N=",state_info$N[ar],")"))
 }
 sub_arousal <- subset(db, variable == "esm_boredom_stress", select = c("arousal","usage_time","usage_freq"))
 
@@ -43,54 +48,102 @@ for (ar in 1:length(sub_state)){
 print(describeBy(sub_arousal$usage_freq))
 
 
-# run Anova to compare group differences state - averge usage time per day (Variances are homogen as Bartlett Test  K-squared = 4.4026, p=0.3543>0.05 [filinger >0.05], df=4)
-data_anova <- rbind(sub_state[[1]],sub_state[[2]],sub_state[[3]],sub_state[[4]],sub_state[[5]])
-data_anova$usage_time <- data_anova$usage_time/60/dt
-bartlett.test(usage_time ~ Group, data = data_anova)
-anova <- aov(formula = usage_time ~ Group, data = data_anova)
-sum_anova <- summary(anova)
-print(sum_anova)
-extractAIC(anova)
 
-TukeyHSD(anova)
-describeBy(state.data$usage_time,state.data$Group)
-
-# boxplot usage time - states
+# boxplot usage time - states, 5 minute prior window
 fun_mean <- function(x){
-  return(data.frame(y=round(mean(x),digits=0),label=round(mean(x,na.rm=T)),digits=0))}
+  return(data.frame(y=round(median(x),digits=0),label=paste0("Mdn=",round(median(x,na.rm=T))),digits=0))}
 state.data <- rbind(sub_state[[1]], sub_state[[2]], sub_state[[3]], sub_state[[4]],sub_state[[5]])
+#state.data$arousal[state.data$arousal==0] <- group[1]
+#state.data$arousal[state.data$arousal==1] <- group[2]
+#state.data$arousal[state.data$arousal==2] <- group[3]
+#state.data$arousal[state.data$arousal==3] <- group[4]
+#state.data$arousal[state.data$arousal==4] <- group[5]
+
 #state.data$Group <- factor(state.data$Group,levels=sample(levels(state.data$Group)))
 
-ggplot(state.data, aes(x=arousal, y=usage_time/dt/60, fill=Group,order=Group)) +
-  stat_boxplot(geom ='errorbar') + 
-  geom_boxplot() +
-  #scale_x_discrete() + 
-  xlab(paste0("Self-assessed arousal state")) +
-  ylab("Daytime smartphone usage in min/h") +
-  stat_summary(fun.y = mean, geom="point",colour="darkred", size=3) +
-  stat_summary(fun.data = fun_mean, geom="text", vjust=-0.7) +
-  ylim(0,120) + scale_y_continuous(breaks = seq(0, 120, by = 20)) +
-  theme(#axis.title.x=element_blank(),
-    axis.text.x=element_blank(),
-    axis.ticks.x=element_blank()) +
-  ggsave(file="box_arousal_usage_time.emf")
+p1 <- ggplot(state.data, aes(x=Group, y=usage_time,order=Group,fill=Group)) +
+    stat_boxplot(geom ='errorbar',size=1) + 
+    geom_boxplot() +
+    #scale_x_discrete() + 
+    xlab(paste0("Self-assessed arousal state")) +
+    ylab("Smartphone usage time in seconds") +
+    guides(fill=FALSE) +
+    theme_grey( ) +
+    #stat_summary(fun.y = mean, geom="point",colour="darkred", size=3) +
+    stat_summary(fun.data = fun_mean, geom="text", vjust=-0.7) +
+    scale_fill_manual(values = color_2) +
+    theme(panel.grid.major = element_line(colour = "white")) +
+    theme(panel.grid.minor = element_line(colour = "white"))+
+    scale_y_continuous(breaks = seq(0, 300,25))
+    #scale_y_continuous(breaks=seq(0,600,25))+
+    #theme(#axis.title.x=element_blank(),
+      #axis.text.x=element_blank(),
+      #axis.ticks.x=element_blank()) +
+    #ggsave(file="boxplot_arousal_usage_time_5minp.emf")
+print(p1)
 
-# boxplot usage freq - states
-ggplot(state.data, aes(x=arousal, y=usage_freq/dt, fill=Group,order=Group)) +
-  stat_boxplot(geom ='errorbar') + 
-  geom_boxplot() +
-  #scale_x_discrete() + 
-  xlab(paste0("Self-assessed arousal state")) +
-  ylab("Daytime smartphone usage in frequency/h") +
-  stat_summary(fun.y = mean, geom="point",colour="darkred", size=3) +
-  stat_summary(fun.data = fun_mean, geom="text", vjust=-0.7) +
-  ylim(0,120) + scale_y_continuous(breaks = seq(0, 120, by = 20)) +
-  theme(#axis.title.x=element_blank(),
-    axis.text.x=element_blank(),
-    axis.ticks.x=element_blank()) +
-  ggsave(file="box_arousal_usage_freq.emf")
+# boxplot usage freq - states, 5 minute prior window
+
+p2 <- ggplot(state.data, aes(x=Group, y=usage_freq,order=Group,fill=Group)) +
+      stat_boxplot(geom ='errorbar',size=1) + 
+      geom_boxplot() +
+      #scale_x_discrete() + 
+      xlab(paste0("Self-assessed arousal state")) +
+      ylab("Smartphone usage frequency") +
+      guides(fill=FALSE) +
+      theme_grey( ) +
+      #stat_summary(fun.y = mean, geom="point",colour="darkred", size=3) +
+      stat_summary(fun.data = fun_mean, geom="text", vjust=-0.7) +
+      scale_fill_manual(values = color_2) +
+      theme(panel.grid.major = element_line(colour = "white")) +
+      theme(panel.grid.minor = element_line(colour = "white"))+
+      scale_y_continuous(breaks = seq(0, 10,1))
+      #scale_y_continuous(breaks=seq(0,600,25))+
+      #theme(#axis.title.x=element_blank(),
+      #axis.text.x=element_blank(),
+      #axis.ticks.x=element_blank()) +
+      #ggsave(file="boxplot_arousal_usage_freq_5minp.emf")
+print(p2)
 
 
+boxplot_grid <- plot_grid(p1,p2, ncol=2, labels = c(),hjust=-21)
+save_plot(file="boxplot_arousal_usage_5minp.emf", plot=boxplot_grid, base_width=12, base_height=4)
+
+  
+# run Anova to compare group differences state - averge usage time (Variances are homogen as Bartlett Test  K-squared = 4.4026, p=0.3543>0.05 [filinger >0.05], df=4)
+data_anova <- rbind(sub_state[[1]],sub_state[[2]],sub_state[[3]],sub_state[[4]],sub_state[[5]])
+data_anova$usage_time <- data_anova$usage_time
+bartlett.test(usage_time ~ Group, data = data_anova)
+leveneTest(usage_freq ~ Group, data = data_anova) # inhomogeneous variacnes if p<.05
+leveneTest(usage_time ~ Group, data = data_anova) # inhomogeneous variacnes if p<.05
+anova <- aov(formula = usage_time ~ Group, data = data_anova)
+sum_anova <- summary(anova)
+extractAIC(anova)
+TukeyHSD(anova)
+describeBy(state.data$usage_time,state.data$Group)
+print(sum_anova)
+
+# run Kruskal-Wallis test to compare group differences state - averge usage time
+describeBy(state.data$usage_time,state.data$Group)
+data_kruskal <- rbind(sub_state[[1]],sub_state[[2]],sub_state[[3]],sub_state[[4]],sub_state[[5]])
+data_kruskal$usage_time <- data_kruskal$usage_time
+kruskal_result <- kruskal.test(formula = usage_time ~ Group, data = data_kruskal)
+print(kruskal_result)
+#kruskalmc(usage_time ~ Group, data = data_kruskal) # post hoc differences
+jonckheere.test(data_kruskal$usage_time,data_kruskal$arousal) # post hoc trend
+dunnTest(usage_time ~ Group, data = data_kruskal,method="bh") # or non
+#pairwise.wilcox.test(data_kruskal$usage_time,data_kruskal$arousal, p.adjust.method="none")
+
+# run Kruskal-Wallis test to compare group differences state - averge usage freq
+describeBy(state.data$usage_freq,state.data$Group)
+data_kruskal <- rbind(sub_state[[1]],sub_state[[2]],sub_state[[3]],sub_state[[4]],sub_state[[5]])
+data_kruskal$usage_freq <- data_kruskal$usage_freq
+kruskal_result <- kruskal.test(formula = usage_freq ~ Group, data = data_kruskal)
+print(kruskal_result)
+#kruskalmc(usage_time ~ Group, data = data_kruskal) # post hoc differences
+jonckheere.test(data_kruskal$usage_freq,data_kruskal$arousal) # post hoc trend
+dunnTest(usage_freq ~ Group, data = data_kruskal,method="bh") # or non
+#pairwise.wilcox.test(data_kruskal$usage_freq,data_kruskal$arousal, p.adjust.method="none")
 
 # scatterplot average daily usage time - usage freq
 cor <- cor.test(sub_arousal$usage_time,sub_arousal$usage_freq)

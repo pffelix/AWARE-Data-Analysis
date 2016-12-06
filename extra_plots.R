@@ -1,4 +1,8 @@
 library(plyr)
+library(cowplot)
+library(ggplot2)
+
+setwd("C:/Users/Felix/Dropbox/Exchange/Universitaet/WS 16_17 KW/BA/Ausarbeitung/7. Thesis/Plots")
 
 db_temp <- db
 # smartphone usage over time

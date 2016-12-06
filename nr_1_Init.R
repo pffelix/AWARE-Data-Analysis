@@ -2,6 +2,8 @@ library(RMySQL)
 library(ggplot2)
 library(RColorBrewer)
 options(scipen = 10)
+library(plyr)
+library(nlme)
 # Bei Fragen senden über Dashboard:
 #Immer erst Devices auswählen, dann frage erstellen / queuen
 # View options
@@ -61,18 +63,38 @@ db_work[["aware_device"]][nrow(db_work[["aware_device"]]), 2] <- 1478551762000
 db_work[["aware_device"]][nrow(db_work[["aware_device"]]), 3] <- "4015af15-2673-4d7d-b9e7-3586f7bba2f9"
 
 # remove researcher device and remove further participants (data cleansing) first 2 - technical problems
-data_cleansing <- TRUE
-if (data_cleansing==TRUE) {
-  remove_devices <- c("460f0293-0d5a-44a0-b236-d883bb6dbe55","55213ca5-77d0-4563-9c61-5f1670c25d73","b7781340-8544-4eea-897e-01d840e6da5d","f5f14668-c994-4f02-b837-bde6dfde6493","4623288b-cf81-4ae3-88ea-f70244b2773d","6c0a744a-3196-4b3a-ae7b-6b81362a9f37")
-  for (j in 1:length(remove_devices)) {
-    for (i in 1:length(sensor)) {
-      db_work[[i]] <- db_work[[i]][!db_work[[i]]$device_id == remove_devices[j],]
-    }
+remove_devices_researcher <- c("460f0293-0d5a-44a0-b236-d883bb6dbe55")
+remove_devices_technical_error <- ("55213ca5-77d0-4563-9c61-5f1670c25d73")
+remove_devices_feedback <- c()
+remove_devices_variance_smaller_3 <- c()
+remove_devices_answers_less_7 <- c()
+#remove_devices_answers_less_10 <- c("1ec126bf-f5a6-48d9-8b12-34de44873304","d7d399c0-0e78-4f09-9407-b3ce8e7b98ef","35dbd554-ee93-4dc9-8991-90c9a457c76f")
+remove_devices_answers_less_10 <-c()
+remove_devices_10_times_balanced <- c()
+data_cleansing_feedback <- FALSE
+data_cleansing_all <- TRUE
+# remove participants with feedback showing no involvement too
+if (data_cleansing_feedback==TRUE) {
+  #4
+  remove_devices_feedback <- c("f5f14668-c994-4f02-b837-bde6dfde6493","b7781340-8544-4eea-897e-01d840e6da5d","4623288b-cf81-4ae3-88ea-f70244b2773d","6c0a744a-3196-4b3a-ae7b-6b81362a9f37")
+  data_cleansing <- TRUE
   }
-} else {
-  remove_devices <- c()
-}
+if (data_cleansing_all==TRUE) {
+  #6
+  remove_devices_variance_smaller_3 <- c("c2448cff-c742-4f43-b1e8-31892ab6d8c0","ccd64e4a-20ad-4c86-967d-1dc73ab9c800","03c78b44-c72a-411e-b25b-8c497e45b5ad","81b6ca40-4e92-4420-ae53-777fa55d01e1","6bf9a272-aa61-4563-9947-edaad0373f3f","fe20aab3-0b36-4499-8ce9-a034de2dd94d")
+  #4
+  remove_devices_feedback <- c("f5f14668-c994-4f02-b837-bde6dfde6493","b7781340-8544-4eea-897e-01d840e6da5d","4623288b-cf81-4ae3-88ea-f70244b2773d","6c0a744a-3196-4b3a-ae7b-6b81362a9f37")
+  #1
+  remove_devices_10_times_balanced <- c("f24832ed-f45a-45aa-b001-d4f1b92168eb")
+  data_cleansing <- TRUE
+  }
 
+remove_devices <- c(remove_devices_researcher,remove_devices_technical_error,remove_devices_feedback,remove_devices_answers_less_7,remove_devices_variance_smaller_3,remove_devices_answers_less_10,remove_devices_10_times_balanced)
+for (j in 1:length(remove_devices)) {
+  for (i in 1:length(sensor)) {
+    db_work[[i]] <- db_work[[i]][!db_work[[i]]$device_id == remove_devices[j],]
+  }
+}
 
 
 # delte invalid automatically generated aware device_id=53fc0613-b7e3-4e8e-a9d3-67182b3d3c42 
@@ -214,16 +236,17 @@ db = as.data.frame(data.table::rbindlist(db_work, fill=TRUE))
 
 # Post processing
 
+db_test_1 <- db
 # delete all values later than 2 weeks
 delete_study_week<- c()
 study_period <- 14*24*60*60
 one_week <- 7*24*60*60
 # Length of window in s to calculate dependent variable before measurement of independent variable delta t in seconds
-dt_min <- 1/6*60*60
+dt_min <- 1/12*60*60
 # Length of window in s to calculate dependent variable after measurement of independent variable delta t in seconds
 dt_max <- 0*60*60
 # time interval of participants answers
-one_interval <- 1/6*60*60
+one_interval <- 1/12*60*60
 # delete participants who extend study_period
 study_period_extend <- TRUE
 
@@ -240,7 +263,7 @@ for (pos in 1:nrow(db)) {
   }
 }
 if (study_period_extend == TRUE){
-  db_temp <- db[-delete_study_week, ]
+  db <- db[-delete_study_week, ]
 }
 
 
@@ -254,10 +277,33 @@ for (dev in 1:dev_N) {
 }
 
 # import new databases after preprocessing
-db_test <- db
+db_test_2 <- db
 # import feedback answers inputed by the participants on Sosci Survey
 source("C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/import_sosci.R")
 db <- sosci_import_function(db)
+
+# remove data after 7 days if participant finished
+db_test_3 <- db
+delete_participants_over_7days <- TRUE
+sub_7days_id <- subset(db, variable=="feedback_continue" & as.character(value)=="No, I will leave the study")
+delete_7days_id <- sub_7days_id$id
+info[info$id %in%  delete_7days_id,"weeks"] <- 1
+sub_14days_id <- subset(db, variable=="feedback_continue" & as.character(value)=="Yes, I want to continue for 7 more days")
+delete_14days_id <- sub_14days_id$id
+info[info$id %in%  delete_14days_id,"weeks"] <- 2
+#delete_7days_timestamp_end_diff <- sub_7days_id$timestamp_end_diff
+#for (dev in delete_7days_id){
+#  a <- db_temp[db_temp$id==dev,][,"timestamp_end_diff"][!is.na(db_temp[db_temp$id==dev,][,"timestamp_end_diff"])]- delete_7days_timestamp_end_diff[which(delete_7days_id==dev)] +60*60*24*7
+#  b <-   db_temp[db_temp$id==dev,][,"timestamp_end_diff"][!is.na(db_temp[db_temp$id==dev,][,"timestamp_end_diff"])]
+#  b <- a
+#  }
+sub_7days_time <- subset(db, variable %in% c("screen","esm_boredom_stress") & timestamp_end_diff >60*60*24*7)
+sub_7days_time <- sub_7days_time[sub_7days_time$id %in% delete_7days_id,]
+delete_7days <- row.names(sub_7days_time)
+
+if (delete_participants_over_7days == TRUE){
+  db <- db[!rownames(db) %in% delete_7days, ]
+}
 
 
 # Reorder columns
@@ -291,4 +337,8 @@ db_init <- db
 
 # generate general statistics dataframe
 stat <- data.frame()
+
+# start other calc sources
+source("C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/nr_2_onoff_calc.R")
+source("C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/nr_3_arousal_calc.R")
 

@@ -56,12 +56,29 @@ for (dev in 1:dev_N){
     time_max <- time_sub + dt_max
     sub_screen_time <- subset(sub_screen, id == dev & timestamp_end_diff >= time_min & timestamp_end_diff <= time_diff+time_max, )
     
+    # delelte measurement points without smartphone usage
     if (nrow(sub_screen_time) <1){
       delete_arousal_wrong_off <-c(delete_arousal_wrong_off, name_row_dev[i])
       usage_time <- c(usage_time, 0)
       usage_freq <- c(usage_freq, 0)
       next
     }
+    
+    # delete interval at which measurement took place when only window prior is used
+    if(dt_max==0){
+      mea_inter <- rownames(sub_screen_time[sub_screen_time$timestamp_end_diff>time_sub & sub_screen_time$timestamp_end_diff-sub_screen_time$time_diff<time_sub,])
+      if(length(mea_inter)>1){
+        stop("error, measurement interval twice")
+      }else{
+        sub_screen_time <- sub_screen_time[!rownames(sub_screen_time) %in% mea_inter, ]
+        if(nrow(sub_screen_time)==0){
+            usage_time <- c(usage_time, 0)
+            usage_freq <- c(usage_freq, 0)
+            next
+        }
+      }
+    }
+    
     
     # correct overlapping intervalls
     for (j in 1:nrow(sub_screen_time)){
@@ -83,7 +100,7 @@ for (dev in 1:dev_N){
       #usage_freq[length(usage_freq)] <- usage_freq[length(usage_freq)] - (351-17)
     #} 
     if (usage_freq[length(usage_freq)] >61*dt){
-      usage_freq[length(usage_freq)] <- 61*dt
+      #usage_freq[length(usage_freq)] <- 61*dt
     } 
     usage_time <- c(usage_time, sum(sub_screen_time$time_diff))
     #print (position)

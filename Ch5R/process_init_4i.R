@@ -4,6 +4,9 @@ library(nlme)
 library(plyr)
 library(data.table)
 library(psych)
+library(ggplot2)
+library(cowplot)
+
 # im moment nur alle interval=2 stunden werte genommen (init ändern), nur für 2 wochen, is na entfern - korrekt?
 ############################################################################################################
 #Integrate data from AWARE database:

@@ -4,7 +4,7 @@ sosci_import_function <- function(db_input){
   
   #data_file = file.choose()
   # setwd("./")
-  data_file = "C:/Users/Felix/Dropbox/Apps/Aware/Database/Sosci_Survey/rdata_feedback_aware_2016-11-26_17-13.csv"
+  data_file = "C:/Users/Felix/Dropbox/Apps/Aware/Database/Sosci_Survey/rdata_feedback_aware_2016-12-04_18-01.csv"
   
   data = read.table(
     file=data_file, encoding="UTF-8",
@@ -170,11 +170,15 @@ sosci_import_function <- function(db_input){
   no_id <- list()
   rownames(data_temp) <- seq(length=nrow(data_temp))
   
+  # delte second answer of participant id "ccd64e4a-20ad-4c86-967d-1dc73ab9c800" who answered twice:
+  data_temp <- data_temp[-max(which(as.character(data_temp$device_id)=="ccd64e4a")), ] 
+  rownames(data_temp) <- seq(length=nrow(data_temp))
+  
   # delete particpants who were ignored because of data cleansing
   if (data_cleansing==TRUE){
     remove_vector <- c()
     for (j in 1:nrow(data_temp)) {
-      id <- which(substr(as.character(remove_devices),1,7) == substr(as.character(data_temp$device_id[j]),start=1,stop=7))
+      id <- which(substr(as.character(remove_devices),2,7) == substr(as.character(data_temp$device_id[j]),start=2,stop=7))
       #print(id)
       if (length(id)!=0) {
         remove_vector <- c(remove_vector,c(j))
@@ -184,14 +188,15 @@ sosci_import_function <- function(db_input){
   }
   rownames(data_temp) <- seq(length=nrow(data_temp))
   
-  
   # id aware ids to rest of data
   for (j in 1:nrow(data_temp)) {
-    id <- which(substr(as.character(info$device_id),1,7) == substr(as.character(data_temp$device_id[j]),start=1,stop=7))
+    id <- which(substr(as.character(info$device_id),2,7) == substr(as.character(data_temp$device_id[j]),start=2,stop=7))
+    print(as.character(data_temp$device_id[j]))
     if(length(id)==0) {
       no_id <- c(no_id,data_temp$device_id[j])
-      if (length(no_id) >5) {
-        warning("no id list is longer than on 26.11.2016")
+      if (length(no_id) >6) {
+        warning("no id list is longer than on 04.12.2016")
+        
         
       }
       data_temp[j,"device_id"] <- NA

@@ -39,4 +39,20 @@ aov_test <- function(data_aov,indep_aov,dep_aov){
   return(aov_sum)
   
 }
+
+mwu_test <- function(GroupA_wilcox_U,GroupB_wilcox_U){
+  wilcox_standard <- wilcox.test(GroupA_wilcox_U,GroupB_wilcox_U) # independent paired=FALSE standard - gnu r standard
+  print(wilcox_standard)
+  p <- wilcox_standard$p.value
+  g <- factor(c(rep("GroupA_wilcox_U", length(GroupA_wilcox_U)), rep("GroupB_wilcox_U", length(GroupB_wilcox_U))))
+  v <- c(GroupA_wilcox_U, GroupB_wilcox_U)
+  wilcox <- wilcox_test(v ~ g, distribution="exact")
+  print(wilcox) # coin library
+  U <- wilcox_standard$statistic
+  print(paste0("U=",U))
+  Z <- wilcox@statistic@teststatistic
+  r <- wilcox@statistic@teststatistic/sqrt(length(c(GroupA_wilcox_U,GroupB_wilcox_U)))
+  print(paste0("r=", r))
   
+  return(data.frame("U"=U,"Z"=Z,"p"=p,"r"=r))
+}
