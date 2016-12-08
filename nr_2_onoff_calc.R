@@ -41,7 +41,7 @@ usage_freq <-  c()
 sub_screen <- subset(db_temp, variable == "screen" & value == "on")
 sub_arousal <- subset(db_temp, variable == "esm_boredom_stress")
 name_row <- rownames(sub_arousal)
-mea <- data.frame(time_diff_mea=rep(NA,length(name_row)),timestamp_end_diff_mea=rep(NA,length(name_row)),time_diff_mea_plus=rep(NA,length(name_row)),timestamp_end_diff_mea_plus=rep(NA,length(name_row)))
+mea <- data.frame(time_diff_mea=rep(NA,length(name_row)),timestamp_end_diff_mea=rep(NA,length(name_row)),time_diff_mea_plus=rep(NA,length(name_row)),timestamp_end_diff_mea_plus=rep(NA,length(name_row)),time_diff_mea_minus=rep(NA,length(name_row)),timestamp_end_diff_mea_minus=rep(NA,length(name_row)))
 pos_mea <- 0
 for (dev in 1:dev_N){
   #dev <- 31
@@ -74,6 +74,9 @@ for (dev in 1:dev_N){
         #mea[pos_mea,"timestamp_end_diff_mea"] <- NA
         #mea[pos_mea,"time_diff_mea_plus"] <- NA
         #mea[pos_mea,"timestamp_end_diff_mea_plus"] <- NA
+        #mea[pos_mea,"time_diff_mea_minus"] <- NA
+        #mea[pos_mea,"timestamp_end_diff_mea_minus"] <- NA
+        
         usage_time <- c(usage_time, NA)
         usage_freq <- c(usage_freq, NA)
         next
@@ -83,6 +86,8 @@ for (dev in 1:dev_N){
         #mea[pos_mea,"timestamp_end_diff_mea"] <- mea_inter$timestamp_end_diff
         #mea[pos_mea,"time_diff_mea_plus"] <- sub_screen[which(rownames(sub_screen) %in% c(rownames(mea_inter)))+1,]$time_diff
         #mea[pos_mea,"timestamp_end_diff_mea_plus"] <- sub_screen[which(rownames(sub_screen) %in% c(rownames(mea_inter)))+1,]$timestamp_end_diff
+        #try(mea[pos_mea,"time_diff_mea_minus"] <- sub_screen[which(rownames(sub_screen) %in% c(rownames(mea_inter)))-1,]$time_diff, silent=TRUE)
+        #try(mea[pos_mea,"timestamp_end_diff_mea_minus"] <- sub_screen[which(rownames(sub_screen) %in% c(rownames(mea_inter)))-1,]$timestamp_end_diff, silent=TRUE)
       }
       
       # delete interval at which measurement took place
@@ -126,10 +131,12 @@ for (dev in 1:dev_N){
 
 db_temp[name_row,"usage_time"] <- usage_time
 db_temp[name_row,"usage_freq"] <- usage_freq
-db_temp[name_row,"time_diff_mea"] <- mea$time_diff_mea
-db_temp[name_row,"timestamp_end_diff_mea"] <- mea$timestamp_end_diff_mea
-db_temp[name_row,"time_diff_mea_plus"] <- mea$time_diff_mea_plus
-db_temp[name_row,"timestamp_end_diff_mea_plus"] <- mea$timestamp_end_diff_mea_plus
+#db_temp[name_row,"time_diff_mea"] <- mea$time_diff_mea
+#db_temp[name_row,"timestamp_end_diff_mea"] <- mea$timestamp_end_diff_mea
+#db_temp[name_row,"time_diff_mea_plus"] <- mea$time_diff_mea_plus
+#db_temp[name_row,"timestamp_end_diff_mea_plus"] <- mea$timestamp_end_diff_mea_plus
+#db_temp[name_row,"time_diff_mea_minus"] <- mea$time_diff_mea_minus
+#db_temp[name_row,"timestamp_end_diff_mea_minus"] <- mea$timestamp_end_diff_mea_minus
 
 db_temp <- db_temp[!rownames(db_temp) %in% delete_arousal_wrong_mea_off, ]
 db_temp <- dplyr::arrange(db_temp, timestamp)

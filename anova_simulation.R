@@ -12,8 +12,8 @@ date <- Sys.Date()
 simul_annova <- function(vector_dt_min,vector_dt_max) {
   #anova_simul_time <- data.frame(F_=NA,sig=NA,dt_min=NA,dt_max=NA,M1=NA,M2=NA,M3=NA,M4=NA,M5=NA,sig1=NA,sig2=NA,sig3=NA,sig4=NA,sig5=NA,t1=NA,t2=NA,t3=NA,t4=NA,t5=NA,p1=NA,p2=NA,p3=NA,p4=NA,p5=NA,df1=NA,df2=NA,df3=NA,df4=NA,df5=NA,N1=NA,N2=NA,N3=NA,N4=NA,N5=NA,p_bartlett=NA,p_fligner=NA)
   #anova_simul_freq <- data.frame(F_=NA,sig=NA,dt_min=NA,dt_max=NA,M1=NA,M2=NA,M3=NA,M4=NA,M5=NA,sig1=NA,sig2=NA,sig3=NA,sig4=NA,sig5=NA,t1=NA,t2=NA,t3=NA,t4=NA,t5=NA,p1=NA,p2=NA,p3=NA,p4=NA,p5=NA,df1=NA,df2=NA,df3=NA,df4=NA,df5=NA,N1=NA,N2=NA,N3=NA,N4=NA,N5=NA,p_bartlett=NA,p_fligner=NA)
-  anova_simul_time <- data.frame(H_=NA,sig=NA,dt_min=NA,dt_max=NA,M1=NA,M2=NA,M3=NA,M4=NA,M5=NA,sig1=NA,sig2=NA,sig3=NA,sig4=NA,sig5=NA,U1=NA,U2=NA,U3=NA,U4=NA,U5=NA,Z1=NA,Z2=NA,Z3=NA,Z4=NA,Z5=NA,p1=NA,p2=NA,p3=NA,p4=NA,p5=NA,r1=NA,r2=NA,r3=NA,r4=NA,r5=NA,df1=NA,df2=NA,df3=NA,df4=NA,df5=NA,N1=NA,N2=NA,N3=NA,N4=NA,N5=NA,JT=NA,JT_p=NA)
-  anova_simul_freq <- data.frame(H_=NA,sig=NA,dt_min=NA,dt_max=NA,M1=NA,M2=NA,M3=NA,M4=NA,M5=NA,sig1=NA,sig2=NA,sig3=NA,sig4=NA,sig5=NA,U1=NA,U2=NA,U3=NA,U4=NA,U5=NA,Z1=NA,Z2=NA,Z3=NA,Z4=NA,Z5=NA,p1=NA,p2=NA,p3=NA,p4=NA,p5=NA,r1=NA,r2=NA,r3=NA,r4=NA,r5=NA,df1=NA,df2=NA,df3=NA,df4=NA,df5=NA,N1=NA,N2=NA,N3=NA,N4=NA,N5=NA,JT=NA,JT_p=NA)
+  anova_simul_time <- data.frame(H_=NA,sig=NA,dt_min=NA,dt_max=NA,M1=NA,M2=NA,M3=NA,M4=NA,M5=NA,Mdn1=NA,Mdn2=NA,Mdn3=NA,Mdn4=NA,Mdn5=NA,sig1=NA,sig2=NA,sig3=NA,sig4=NA,sig5=NA,U1=NA,U2=NA,U3=NA,U4=NA,U5=NA,Z1=NA,Z2=NA,Z3=NA,Z4=NA,Z5=NA,p1=NA,p2=NA,p3=NA,p4=NA,p5=NA,r1=NA,r2=NA,r3=NA,r4=NA,r5=NA,df1=NA,df2=NA,df3=NA,df4=NA,df5=NA,N1=NA,N2=NA,N3=NA,N4=NA,N5=NA,JT=NA,JT_p=NA)
+  anova_simul_freq <- data.frame(H_=NA,sig=NA,dt_min=NA,dt_max=NA,M1=NA,M2=NA,M3=NA,M4=NA,M5=NA,Mdn1=NA,Mdn2=NA,Mdn3=NA,Mdn4=NA,Mdn5=NA,sig1=NA,sig2=NA,sig3=NA,sig4=NA,sig5=NA,U1=NA,U2=NA,U3=NA,U4=NA,U5=NA,Z1=NA,Z2=NA,Z3=NA,Z4=NA,Z5=NA,p1=NA,p2=NA,p3=NA,p4=NA,p5=NA,r1=NA,r2=NA,r3=NA,r4=NA,r5=NA,df1=NA,df2=NA,df3=NA,df4=NA,df5=NA,N1=NA,N2=NA,N3=NA,N4=NA,N5=NA,JT=NA,JT_p=NA)
   source("C:/Users/Felix/Dropbox/Apps/Aware/Database/R Scripts/tools.R")
   for (test_pos in 1:length(vector_dt_min)){
     sub_state <- list()
@@ -122,6 +122,11 @@ simul_annova <- function(vector_dt_min,vector_dt_max) {
     anova_simul_time[test_pos,"M3"] <-sum_describe_time[[3]]$mean
     anova_simul_time[test_pos,"M4"] <-sum_describe_time[[4]]$mean
     anova_simul_time[test_pos,"M5"] <-sum_describe_time[[5]]$mean
+    anova_simul_time[test_pos,"Mdn1"] <-sum_describe_time[[1]]$median
+    anova_simul_time[test_pos,"Mdn2"] <-sum_describe_time[[2]]$median
+    anova_simul_time[test_pos,"Mdn3"] <-sum_describe_time[[3]]$median
+    anova_simul_time[test_pos,"Mdn4"] <-sum_describe_time[[4]]$median
+    anova_simul_time[test_pos,"Mdn5"] <-sum_describe_time[[5]]$median
     anova_simul_time[test_pos,"sig1"] <-sum_dun_time[[2]]$P.adj[2]
     anova_simul_time[test_pos,"sig2"] <-sum_dun_time[[2]]$P.adj[3]
     anova_simul_time[test_pos,"sig3"] <-sum_dun_time[[2]]$P.adj[7]
@@ -169,6 +174,11 @@ simul_annova <- function(vector_dt_min,vector_dt_max) {
     anova_simul_freq[test_pos,"M3"] <-sum_describe_freq[[3]]$mean
     anova_simul_freq[test_pos,"M4"] <-sum_describe_freq[[4]]$mean
     anova_simul_freq[test_pos,"M5"] <-sum_describe_freq[[5]]$mean
+    anova_simul_freq[test_pos,"Mdn1"] <-sum_describe_freq[[1]]$median
+    anova_simul_freq[test_pos,"Mdn2"] <-sum_describe_freq[[2]]$median
+    anova_simul_freq[test_pos,"Mdn3"] <-sum_describe_freq[[3]]$median
+    anova_simul_freq[test_pos,"Mdn4"] <-sum_describe_freq[[4]]$median
+    anova_simul_freq[test_pos,"Mdn5"] <-sum_describe_freq[[5]]$median
     anova_simul_freq[test_pos,"sig1"] <-sum_dun_freq[[2]]$P.adj[2]
     anova_simul_freq[test_pos,"sig2"] <-sum_dun_freq[[2]]$P.adj[3]
     anova_simul_freq[test_pos,"sig3"] <-sum_dun_freq[[2]]$P.adj[7]
@@ -220,6 +230,10 @@ test_vector_dt_max <- c(rep(0,240),seq(0.25,60,0.25))
 simul_anova_list_dt <- simul_annova(test_vector_dt_min,test_vector_dt_max)
 simul_anova_time_dt <- simul_anova_list_dt[[1]]
 simul_anova_freq_dt <- simul_anova_list_dt[[2]]
+simul_anova_time_dt[nrow(simul_anova_time_dt)+1,] <-0
+simul_anova_freq_dt[nrow(simul_anova_freq_dt)+1,] <-0
+simul_anova_time_dt <- simul_anova_time_dt[order(-simul_anova_time_dt[,"dt_min"],simul_anova_time_dt[,"dt_max"]),]
+simul_anova_freq_dt <- simul_anova_freq_dt[order(-simul_anova_freq_dt[,"dt_min"],simul_anova_freq_dt[,"dt_max"]),]
 
 # #vector in minutes
 # test_vector_dt_min <- c(seq(0.5,59.75,0.25),seq(60,120,1))
@@ -249,7 +263,7 @@ simul_anova_freq_dt <- simul_anova_list_dt[[2]]
 # simul_anova_freq_dt_max <- simul_anova_list_dt_max[[2]]
 
 simul_anova <- list(simul_anova_time_dt,simul_anova_freq_dt)
-save(simul_anova, file = paste0(database_path, "/Backup_Workspace/simul_kruskal_init_full_2", date, ".RData"))
-#load(file = paste0(database_path, "/Backup_Workspace/", "simul_kruskal2016-11-27_init", ".RData"))
+save(simul_anova, file = paste0(database_path, "/Backup_Workspace/simul_kruskal_init_full_3", date, ".RData"))
+#load(file = paste0(database_path, "/Backup_Workspace/", "simul_kruskal2016-11-27_init_2", ".RData"))
 simul_anova_time_dt <- simul_anova[[1]]
 simul_anova_freq_dt <- simul_anova[[2]]

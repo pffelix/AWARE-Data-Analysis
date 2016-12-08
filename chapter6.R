@@ -13,7 +13,8 @@ blu <- "#1F497D"
 lab <- c("bored","litte to do","balanced","slightly under pressure","stressed")
 labe <- c("bored","","balanced","","stressed")
 lab_at <- c(-2,-1,0,1,2)
-color_arousal <- c("green","orange",blu,"purple","brown")
+color_arousal <- c(blu,"steelblue2","black",'orange',"red")
+color_2 <- c(blu,"steelblue2","black",'orange',"red")
 
 #### Chapter Evaluation Study method
 print("Chapter Evaluation Study method")
