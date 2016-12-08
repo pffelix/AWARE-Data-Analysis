@@ -47,7 +47,7 @@ id_vector <- unique(sub$id)
 plot_vector <- list()
 max_dev <- length(id_vector)
 for (dev in 1:max_dev){
-  p <- ggplot(data=sub[sub[,"id"]==dev,]) +
+  p <- ggplot(data=sub[sub$id==dev,]) +
     geom_line(aes(x=timestamp_end_diff/60/60/24, y=arousal-2)) + 
     xlab(paste0("Days after signup")) +
     ylab(paste0("self-assesed arousal state"))+
@@ -56,7 +56,7 @@ for (dev in 1:max_dev){
   #print(p)
   plot_vector[[dev]] <- p
 }
-
+print(plot_vector[1])
 p1 <- plot_grid(plotlist = plot_vector[c(1:15)], ncol=3, labels = id_vector[c(1:15)],hjust=-21)
 p1.2 <- plot_grid(plotlist = plot_vector[c(1:15)], ncol=3, labels = id_vector[c(1:15)],hjust=-10)
 p2 <- plot_grid(plotlist = plot_vector[c(16:30)], ncol=3, labels = id_vector[c(16:30)],hjust=-10)

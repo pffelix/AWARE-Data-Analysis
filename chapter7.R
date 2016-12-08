@@ -148,7 +148,7 @@ dunnTest(usage_freq ~ Group, data = data_kruskal,method="bh") # or non
 # scatterplot average daily usage time - usage freq
 cor <- cor.test(sub_arousal$usage_time,sub_arousal$usage_freq)
 sub_arousal <- subset(db, variable == "esm_boredom_stress")
-sub_arousal <- sub_arousal[,c("arousal","usage_time","usage_freq")]
+#sub_arousal <- sub_arousal[,c("arousal","usage_time","usage_freq")]
 ggplot(data=sub_arousal, aes(x=usage_time/dt/60, y=usage_freq/dt))+
   geom_point(color=blu) +
   xlab(paste0("Daytime smartphone usage in min/h"," (N=",arousal_N,")")) +
@@ -187,8 +187,8 @@ for (i in 1:length(plot_list)){
 }
 
 # Plot group mean and duncan sig over time window (total time)
-plot_list <-list(simul_anova_time_dt_min,simul_anova_time_dt_max,simul_anova_time_dt, simul_anova_freq_dt_min, simul_anova_freq_dt_max, simul_anova_freq_dt)
-plot_name <- list(deparse(substitute(simul_anova_time_dt_min)),deparse(substitute(simul_anova_time_dt_max)),deparse(substitute(simul_anova_time_dt)),deparse(substitute(simul_anova_freq_dt_min)),deparse(substitute(simul_anova_freq_dt_max)),deparse(substitute(simul_anova_freq_dt)))
+plot_list <-list(simul_anova_time_dt, simul_anova_freq_dt)
+plot_name <- list(deparse(substitute(simul_anova_time_dt)),deparse(substitute(simul_anova_freq_dt)))
 legend_name <- c("Mean: Bored","Mean: Little to do","Mean: Balanced","Mean: Slightly under pressure","Mean: Stressed","Sig. differences: Bored - balanced","Sig. differences: Little to do - balanced","Sig. differences: Slightly under pressure - balanced","Sig. differences: Stressed - balanced","Sig. p=.05")
 breaks_point <- c(1:10)
 cols <- c("green","orange", "red","blue", "purple","green","orange","blue", "purple", "black")
@@ -203,7 +203,7 @@ for (i in 1:length(plot_list)){
     legend_entry <- "Mean smartphone usage in frequency/h"
   }
   xlim_p <- max(plot_data_anova$dt_min+plot_data_anova$dt_max)
-  xlim_m <- 5
+  xlim_m <- -60
   plot_data_anova_ylim <- subset(plot_data_anova, dt_min+dt_max >=xlim_m)
   ylim_p <- ceiling(max(c(plot_data_anova_ylim$M1,plot_data_anova_ylim$M2,plot_data_anova_ylim$M3,plot_data_anova_ylim$M4,plot_data_anova_ylim$M5)))
   plot_data_anova$sig1 <- plot_data_anova$sig1*ylim_p
@@ -230,8 +230,8 @@ for (i in 1:length(plot_list)){
 
   
 # Plot group difference to balanced and duncan sig over time window (total time)
-plot_list <-list(simul_anova_time_dt_min,simul_anova_time_dt_max,simul_anova_time_dt, simul_anova_freq_dt_min, simul_anova_freq_dt_max, simul_anova_freq_dt)
-plot_name <- list(deparse(substitute(simul_anova_time_dt_min)),deparse(substitute(simul_anova_time_dt_max)),deparse(substitute(simul_anova_time_dt)),deparse(substitute(simul_anova_freq_dt_min)),deparse(substitute(simul_anova_freq_dt_max)),deparse(substitute(simul_anova_freq_dt)))
+plot_list <-list(simul_anova_time_dt, simul_anova_freq_dt)
+plot_name <- list(deparse(substitute(simul_anova_time_dt)),deparse(substitute(simul_anova_freq_dt)))
 legend_name <- c("Differences: Bored - balanced","Differences: Little to do - balanced","Differences: Slightly under pressure - balanced","Differences: Stressed - balanced","Sig. differences: Bored - balanced","Sig. differences: Little to do - balanced","Sig. differences: Slightly under pressure - balanced","Sig. differences: Stressed - balanced","Sig. differences: Bored - stressed","Sig. p=.05")
 breaks_point <- c(1:10)
 cols <- c("green","orange", "blue", "purple","green","orange","blue", "purple", "red","black")
@@ -253,7 +253,7 @@ for (i in 1:length(plot_list)){
     legend_entry <- "Usage time differences in %"
   }
   xlim_p <- max(plot_data_anova$dt_min+plot_data_anova$dt_max)
-  xlim_m <- 5
+  xlim_m <- -60
   plot_data_anova_ylim <- subset(plot_data_anova, dt_min+dt_max >=xlim_m)
   ylim_m <- floor(min(c(plot_data_anova_ylim$M1,plot_data_anova_ylim$M2,plot_data_anova_ylim$M4,plot_data_anova_ylim$M5)))
   ylim_p <- ceiling(max(c(plot_data_anova_ylim$M1,plot_data_anova_ylim$M2,plot_data_anova_ylim$M4,plot_data_anova_ylim$M5)))
@@ -265,7 +265,7 @@ for (i in 1:length(plot_list)){
   plot_data_anova[,"p"] <- rep(0.05*(ylim_p),nrow(plot_data_anova))*p_sig_scale
   melted <- melt(plot_data_anova, variable.name="Group", id=c("dt_min","dt_max"),measure.vars=c("M1","M2","M4","M5","sig1","sig2","sig3","sig4","sig5","p"))
   print(ggplot(data=melted) +
-          geom_line(aes(dt_min+dt_max, y=value, group=Group,colour=Group, size=Group, linetype=Group,shape=Group)) +
+          geom_line(aes(-dt_min+dt_max, y=value, group=Group,colour=Group, size=Group, linetype=Group,shape=Group)) +
           xlab(paste0("Window length centered at arousal measurement points in min")) +
           scale_colour_manual("Group",label= legend_name, values= cols) +
           scale_linetype_manual("Group",label= legend_name, values=line_type) +

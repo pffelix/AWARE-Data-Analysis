@@ -41,7 +41,7 @@ usage_freq <-  c()
 sub_screen <- subset(db_temp, variable == "screen" & value == "on")
 sub_arousal <- subset(db_temp, variable == "esm_boredom_stress")
 name_row <- rownames(sub_arousal)
-mea <- data.frame(time_diff_mea=rep(NA,length(name_row)),timestamp_end_diff_mea=rep(NA,length(name_row)),time_diff_mea_plus=rep(NA,length(name_row)),timestamp_end_diff_mea_plus=rep(NA,length(name_row)))
+mea <- data.frame(time_diff_mea=rep(NA,length(name_row)),timestamp_end_diff_mea=rep(NA,length(name_row)),time_diff_mea_plus=rep(NA,length(name_row)),timestamp_end_diff_mea_plus=rep(NA,length(name_row)),time_diff_mea_minus=rep(NA,length(name_row)),timestamp_end_diff_mea_minus=rep(NA,length(name_row)))
 pos_mea <- 0
 for (dev in 1:dev_N){
   #dev <- 31
@@ -55,12 +55,12 @@ for (dev in 1:dev_N){
     time_sub <- sub_arousal_dev[name_row_dev[i],"timestamp_end_diff"]
     time_min <- time_sub - dt_min
     #if(time_min < 0){
-    #time_min <- 0
+      #time_min <- 0
     #}
     time_max <- time_sub + dt_max
     sub_screen_time <- subset(sub_screen, id == dev & timestamp_end_diff >= time_min & timestamp_end_diff <= time_diff+time_max, )
     
-    
+
     mea_inter <- sub_screen_time[sub_screen_time$timestamp_end_diff>time_sub & sub_screen_time$timestamp_end_diff-sub_screen_time$time_diff<time_sub,]
     if(nrow(mea_inter)>1){
       stop("error, measurement interval twice")
@@ -70,20 +70,24 @@ for (dev in 1:dev_N){
         #print("hallo")
         delete_arousal_wrong_mea_off <-c(delete_arousal_wrong_mea_off, name_row[pos_mea])
         # change
-        #mea[pos_mea,"time_diff_mea"] <- NA
-        #mea[pos_mea,"timestamp_end_diff_mea"] <- NA
-        #mea[pos_mea,"time_diff_mea_plus"] <- NA
-        #mea[pos_mea,"timestamp_end_diff_mea_plus"] <- NA
+        mea[pos_mea,"time_diff_mea"] <- NA
+        mea[pos_mea,"timestamp_end_diff_mea"] <- NA
+        mea[pos_mea,"time_diff_mea_plus"] <- NA
+        mea[pos_mea,"timestamp_end_diff_mea_plus"] <- NA
+        mea[pos_mea,"time_diff_mea_minus"] <- NA
+        mea[pos_mea,"timestamp_end_diff_mea_minus"] <- NA
         usage_time <- c(usage_time, NA)
         usage_freq <- c(usage_freq, NA)
         next
       }else{ # activate 
         # change
-        #mea[pos_mea,"time_diff_mea"] <- mea_inter$time_diff
-        #mea[pos_mea,"timestamp_end_diff_mea"] <- mea_inter$timestamp_end_diff
-        #mea[pos_mea,"time_diff_mea_plus"] <- sub_screen[which(rownames(sub_screen) %in% c(rownames(mea_inter)))+1,]$time_diff
-        #mea[pos_mea,"timestamp_end_diff_mea_plus"] <- sub_screen[which(rownames(sub_screen) %in% c(rownames(mea_inter)))+1,]$timestamp_end_diff
-      }
+        mea[pos_mea,"time_diff_mea"] <- mea_inter$time_diff
+        mea[pos_mea,"timestamp_end_diff_mea"] <- mea_inter$timestamp_end_diff
+        mea[pos_mea,"time_diff_mea_plus"] <- sub_screen[which(rownames(sub_screen) %in% c(rownames(mea_inter)))+1,]$time_diff
+        mea[pos_mea,"timestamp_end_diff_mea_plus"] <- sub_screen[which(rownames(sub_screen) %in% c(rownames(mea_inter)))+1,]$timestamp_end_diff
+        try(mea[pos_mea,"time_diff_mea_minus"] <- sub_screen[which(rownames(sub_screen) %in% c(rownames(mea_inter)))-1,]$time_diff, silent=TRUE)
+        try(mea[pos_mea,"timestamp_end_diff_mea_minus"] <- sub_screen[which(rownames(sub_screen) %in% c(rownames(mea_inter)))-1,]$timestamp_end_diff, silent=TRUE)
+        }
       
       # delete interval at which measurement took place
       sub_screen_time <- sub_screen_time[!rownames(sub_screen_time) %in% rownames(mea_inter), ]
@@ -109,11 +113,11 @@ for (dev in 1:dev_N){
         sub_screen_time$time_diff[j] <- sub_screen_time$time_diff[j]-(time_min-timestamp_diff)
       }
     }
-    
+
     usage_freq <- c(usage_freq,nrow(sub_screen_time))
     # correct AWARE error: database entries with usage frequencys in milliseconds change set to 60/h max
     #if (sub_arousal_dev$X_id[i] == 6041 & usage_freq[length(usage_freq)]/dt >100){
-    #usage_freq[length(usage_freq)] <- usage_freq[length(usage_freq)] - (351-17)
+      #usage_freq[length(usage_freq)] <- usage_freq[length(usage_freq)] - (351-17)
     #} 
     if (usage_freq[length(usage_freq)] >61*dt){
       #usage_freq[length(usage_freq)] <- 61*dt
@@ -130,13 +134,15 @@ db_temp[name_row,"time_diff_mea"] <- mea$time_diff_mea
 db_temp[name_row,"timestamp_end_diff_mea"] <- mea$timestamp_end_diff_mea
 db_temp[name_row,"time_diff_mea_plus"] <- mea$time_diff_mea_plus
 db_temp[name_row,"timestamp_end_diff_mea_plus"] <- mea$timestamp_end_diff_mea_plus
+db_temp[name_row,"time_diff_mea_minus"] <- mea$time_diff_mea_minus
+db_temp[name_row,"timestamp_end_diff_mea_minus"] <- mea$timestamp_end_diff_mea_minus
 
 db_temp <- db_temp[!rownames(db_temp) %in% delete_arousal_wrong_mea_off, ]
 db_temp <- dplyr::arrange(db_temp, timestamp)
 db_temp <- db_temp[order(db_temp[,"id"],db_temp[,"timestamp_end"]),]
 db_N= nrow(db_temp)
 rownames(db_temp) <- seq(length=db_N)
-db <- db_temp
+dbe <- db_temp
 
 
 #calculate on/off usage

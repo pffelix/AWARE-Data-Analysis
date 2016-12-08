@@ -203,11 +203,13 @@ describe(answers_per_day)
 
 
 # cor: time increase - time_diff arousal answer
+sub <- subset(db, variable == "esm_boredom_stress")
 cor.test(sub$timestamp_end_diff,sub$time_diff, alternative="greater")
 cor.test(sub$timestamp_end_diff,sub$time_diff, alternative="greater", method="spearman")
 
 
 # cor: time increase - time_interval arousal answers
+sub <- subset(db, variable == "esm_boredom_stress")
 arousal_diff <- c()
 for(dev in 1:dev_N) {
   sub_dev <- subset(sub, id==dev) 
