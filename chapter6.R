@@ -22,7 +22,7 @@ print("Chapter Evaluation Study method")
 
 # Validity scale - boredom (if changed: stress) week rewareded
 
-sub <- subset(db, variable == "week_boredom") 
+sub <- subset(db, variable == "week_stress") 
 id_vector_bored <- sub$id
 id_vector_bored <- id_vector_bored[!is.na(id_vector_bored)]
 mood_week <- sub[sub$id %in% id_vector_bored, ]
@@ -201,6 +201,9 @@ describe(answers_per_day)
 # Average arousal self-assesment per participant per day (calculate from last esm measurment point)
 answers_per_day <- arousal$N/arousal$duration*24*60*60
 describe(answers_per_day)
+min(arousal$N)
+max(arousal$N)
+IQR(answers_per_day)
 
 
 # cor: time increase - time_diff arousal answer

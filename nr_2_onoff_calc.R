@@ -120,8 +120,8 @@ for (dev in 1:dev_N){
     #if (sub_arousal_dev$X_id[i] == 6041 & usage_freq[length(usage_freq)]/dt >100){
     #usage_freq[length(usage_freq)] <- usage_freq[length(usage_freq)] - (351-17)
     #} 
-    if (usage_freq[length(usage_freq)] >61*dt){
-      #usage_freq[length(usage_freq)] <- 61*dt
+    if (usage_freq[length(usage_freq)] >100){
+      usage_freq[length(usage_freq)] <- 50
     } 
     usage_time <- c(usage_time, sum(sub_screen_time$time_diff))
     #print (position)

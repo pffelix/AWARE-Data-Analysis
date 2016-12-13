@@ -213,9 +213,16 @@ total_arousal_mean <- ddply(melted_arousal_freq, c("time"), function(x) sum(x$va
 mean_data_frame <- data.frame("time"=arousal_0_mean[,1], "arousal_0_mean"=arousal_0_mean[,2], "arousal_1_mean"=arousal_1_mean[,2], "arousal_2_mean"=arousal_2_mean[,2], "arousal_3_mean"=arousal_3_mean[,2], "arousal_4_mean"=arousal_4_mean[,2],"total_mean"=total_arousal_mean[,2])
 melted_arousal_freq <- melt(mean_data_frame, variable.name="Group", id=c("time"),measure.vars=c("arousal_0_mean","arousal_1_mean","arousal_2_mean","arousal_3_mean","arousal_4_mean","total_mean"))
 
+group_pre_2 <- c("Bored","Little to do","Balanced","Slightly under pressure","Stressed")
+
+for (ar in 1:5){
+  group_pre_2[ar] <- paste0(group_pre_2[ar], " (N=",state_info$N[ar],")")
+}
+group <- factor(group_pre_2, levels = group_pre_2)
+
 color_2 <- c(blu,"steelblue2","black",'orange',"red")
 cols <- c(color_2,"red4")
-legend_name <- c("Bored","Little to do","Balanced","Slightly under pressure","Stressed","All")
+legend_name <- c(as.character(group),paste0("All categories", " (N=",arousal_N,")"))
 line_size <- c(1,1,1,1,1,1.5)
 p3 <-ggplot() +
   geom_line(data = melted_arousal_freq, aes(x=time, y=value, colour = Group, size=Group)) +
@@ -224,8 +231,8 @@ p3 <-ggplot() +
   xlab(paste0("Days after signup for the study")) +
   ylab(paste0("Mean answer frequency per day"))+
   theme_grey() +
-  scale_colour_manual("Arousal state category",label= legend_name, values= cols) +
-  scale_size_manual ("Arousal state category",label= legend_name, values=line_size) +
+  scale_colour_manual("Answer category",label= legend_name, values= cols) +
+  scale_size_manual ("Answer category",label= legend_name, values=line_size) +
   scale_x_continuous(breaks = seq(0, 30, by = 1))+
   scale_y_continuous(breaks = seq(0, 30, by = 0.5))+
   ggsave(file="week_mean_arousal_freq_per_day.emf")

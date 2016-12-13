@@ -61,7 +61,7 @@ p1 <- plot_grid(plotlist = plot_vector[c(1:15)], ncol=3, labels = id_vector[c(1:
 p1.2 <- plot_grid(plotlist = plot_vector[c(1:15)], ncol=3, labels = id_vector[c(1:15)],hjust=-10)
 p2 <- plot_grid(plotlist = plot_vector[c(16:30)], ncol=3, labels = id_vector[c(16:30)],hjust=-10)
 p3 <- plot_grid(plotlist = plot_vector[c(31:45)], ncol=3, labels = id_vector[c(31:45)],hjust=-10)
-p4 <- plot_grid(plotlist = plot_vector[c(45:60)], ncol=3, labels = id_vector[c(45:60)],hjust=-10)
+p4 <- plot_grid(plotlist = plot_vector[c(46:60)], ncol=3, labels = c(46,47,48,49,50),hjust=-10)
 
 save_plot(file="plot_device_01_09_arousal_time.emf", plot=p1, base_width=11, base_height=17)
 save_plot(file="plot_device_10_15_arousal_time.emf", plot=p1.2, base_width=11, base_height=17)

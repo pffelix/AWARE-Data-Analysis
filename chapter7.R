@@ -145,20 +145,7 @@ jonckheere.test(data_kruskal$usage_freq,data_kruskal$arousal) # post hoc trend
 dunnTest(usage_freq ~ Group, data = data_kruskal,method="bh") # or non
 #pairwise.wilcox.test(data_kruskal$usage_freq,data_kruskal$arousal, p.adjust.method="none")
 
-# scatterplot average daily usage time - usage freq
-cor <- cor.test(sub_arousal$usage_time,sub_arousal$usage_freq)
-sub_arousal <- subset(db, variable == "esm_boredom_stress")
-#sub_arousal <- sub_arousal[,c("arousal","usage_time","usage_freq")]
-ggplot(data=sub_arousal, aes(x=usage_time/dt/60, y=usage_freq/dt))+
-  geom_point(color=blu) +
-  xlab(paste0("Daytime smartphone usage in min/h"," (N=",arousal_N,")")) +
-  ylab(paste0("Daytime smartphone usage in frequeny/h"," (N=",arousal_N,")")) +
-  #geom_point(shape=1)+
-  geom_smooth(method=loess,aes(colour="Non parametric LOESS regression curve")) +
-  geom_smooth(method=lm, aes(colour=paste0("Linear regression curve r(",cor["parameter"],")=",round(as.numeric(cor["estimate"]),2),", p<.001"))) +
-  scale_colour_manual(name="Legend", values=c("black", "red"), position="top")+
-  theme(legend.justification=c(0.99,0.99), legend.position=c(0.99,0.99)) +
-  ggsave(file="scatter_usage_time_usage_freq.emf") 
+
 
 
 

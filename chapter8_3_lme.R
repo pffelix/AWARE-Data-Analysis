@@ -7,7 +7,7 @@ library(psych)
 library(ggplot2)
 library(cowplot)
 setwd("C:/Users/Felix/Dropbox/Exchange/Universitaet/WS 16_17 KW/BA/Ausarbeitung/7. Thesis/Plots")
-library(lmerTest)
+library(lme4)
 #dt_max <- 0*60
 #dt_min <- 60*60
 # im moment nur alle interval=2 stunden werte genommen (init ändern), nur für 2 wochen, is na entfern - korrekt?
@@ -21,8 +21,8 @@ omit_id <- c()#c(56,42,39,6)
 
 # modify arousal of init database
 # Stressed Setting
-#AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c(NA,NA,"0",NA,"1",NA)))
-#label_name <- c("balanced","stressed")
+AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c(NA,NA,"0",NA,"1",NA)))
+label_name <- c("balanced","stressed")
 
 # Slightly under pressure Setting
 #AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c(NA,NA,"0","1",NA,NA)))
@@ -30,7 +30,7 @@ omit_id <- c()#c(56,42,39,6)
 
 # Little to do Setting
 #AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c(NA,"1","0",NA,NA,NA)))
-#label_name <- c("balanced","little\nto do")
+#label_name <- c("balanced","little to do")
 
 # Bored Setting
 #AWARE$arousal <- as.integer(mapvalues(as.character(AWARE$arousal), c("0","1","2","3","4",NA), c("1",NA,"0",NA,NA,NA)))
@@ -95,6 +95,11 @@ AWARE <- subset(AWARE,variable == "esm_boredom_stress" & (arousal == 0 | arousal
 AWAREsub <- AWARE
 AWAREsub[,"id_old"] <- AWAREsub$id
 
+# number_0_1 <- c()
+# for (i in 1:50){
+#   number_0_1 <- c(number_0_1,describeBy(process$third,process$id)[[i]]$mean)
+# }
+# describeBy(number_0_1,number_0_1)
 
 # configure variables from exiting variables (change)
 #independent:##############################################################################################
@@ -140,7 +145,7 @@ AWAREsub$personality_openness_0_1 <- as.integer(mapvalues(as.character(AWAREsub$
 # Personality window
 #window_0_1
 # usage time low/high
-AWAREsub$usage_time_lohi_0_1 <-  as.integer(ifelse(AWAREsub$usage_time_lohi<=median(unique(AWAREsub$usage_time_lohi),na.rm=TRUE),1,0))
+AWAREsub$usage_time_lohi_0_1 <-  as.integer(ifelse(AWAREsub$usage_time_lohi<=median(unique(AWAREsub$usage_time_lohi),na.rm=TRUE),0,1))
 # usage frequency low/high
 AWAREsub$usage_freq_lohi_0_1 <-  as.integer(ifelse(AWAREsub$usage_freq_lohi<=median(unique(AWAREsub$usage_freq_lohi),na.rm=TRUE),0,1))
 
@@ -187,7 +192,7 @@ AWAREsub <- AWAREsub[order(id,interval_new),]
 process <- data.frame(id = integer(nr_par*nr_mea), time = integer(nr_par*nr_mea), time7c = numeric(nr_par*nr_mea), dep = numeric(nr_par*nr_mea), indep = numeric(nr_par*nr_mea), indepc = numeric(nr_par*nr_mea), indepcb = numeric(nr_par*nr_mea), indepcw = numeric(nr_par*nr_mea), third = integer(nr_par*nr_mea))
 process[,"id"] <- AWAREsub$id
 process[,"time"] <- AWAREsub$interval_new
-process[,"time7c"] <- (process$time/(nr_mea/2)-1)*7+7 # centered around - 7 (day 1), 7 (day 14)
+process[,"time7c"] <- (process$time/(nr_mea/2)-1)*7+7 # centered around 0 (day 1), 14 (day 14)
 process[,"dep"] <- AWAREsub$dep
 process[,"indep"] <- AWAREsub$indep
 #process[is.na(process)] <- 0
@@ -222,15 +227,15 @@ process <- process[!is.na(process$indep),] # if third much smaller N
 #Run linear growth model with AR(1) errors 
 #tryCatch(cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit), error=function(e){ warning= warning("!!!!!!!!!!convergence limit reached!!!!!!!!!!!!!")
 #tryCatch(cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit), error=function(e){ warning= warning("!!!!!!!!!!convergence limit reached!!!!!!!!!!!!!")
-#cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit,control = lmeControl(msMaxIter = 200, msMaxEval = 500, msVerbose = TRUE, sing.tol=1e-20))})
+cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id,na.action=na.omit,correlation = corAR1(),control = lmeControl(msMaxIter = 200, msMaxEval = 500, msVerbose = TRUE, sing.tol=1e-20))
 #cpmodel <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit,control = lmeControl(msMaxIter = 200, msMaxEval = 500, sing.tol=1e-20))
-#summary_save_2 <- summary(cpmodel)
+summary_save <- summary(cpmodel)
 
 ############################################################################################################
-cpmodel <- lmer(dep ~ time7c + indepcw*third + indepcb*third +(indepcw|id), data=process)
-summary_save <- summary(cpmodel)
+#cpmodel <- lmer(dep ~ time7c + indepcw*third + indepcb*third +(indepcw|id) , data=process)
+#summary_save <- summary(cpmodel)
 #Put the EBLUPs of the random effects into a separate dataet
-cfs<-ranef(cpmodel)[[1]]
+cfs<-ranef(cpmodel)
 cfs$id<-1:nrow(cfs) #Add in id numbers
 #Fix the names of the EBLUPs
 names(cfs) <- make.names(names(cfs))
@@ -238,10 +243,10 @@ names(cfs)[c(2,1)] <- c("ebslope","ebintercept")
 #create a upper-level data frame with third and add to data frame with EBLUPs
 cfs$third<-aggregate(third ~ id, data=process, mean)[, 2]
 #Add the fixed effects to the EBLUPs
-fix_Intercept <- as.numeric(summary_save[[10]]["(Intercept)","Estimate"])
-fix_third <- as.numeric(summary_save[[10]]["third","Estimate"])
-fix_indepcw <- as.numeric(summary_save[[10]]["indepcw","Estimate"])
-fix_indepcw_third <- as.numeric(summary_save[[10]]["indepcw:third","Estimate"])
+fix_Intercept <- as.numeric(summary_save[[4]]$fixed["(Intercept)"])
+fix_third <- as.numeric(summary_save[[4]]$fixed["third"])
+fix_indepcw <- as.numeric(summary_save[[4]]$fixed["indepcw"])
+fix_indepcw_third <- as.numeric(summary_save[[4]]$fixed["indepcw:third"])
 cfs$intercept<- (fix_Intercept + fix_third*cfs$third + cfs$ebintercept) 
 cfs$fixinter<- (fix_Intercept + fix_third*cfs$third) #not used below
 cfs$slope<- (fix_indepcw + fix_indepcw_third*cfs$third + cfs$ebslope)
@@ -309,7 +314,6 @@ ordcfs<-cfs[order(cfs$third, cfs$slope, cfs$id),]
 # lines(process$indep[process$third==1], predh, col="Red", lwd=4)
 # #dev.off()
 
-
 # high smartphone affection group : third=1 
 id_vec <- c()
 x_vec <- c()
@@ -322,6 +326,7 @@ for (i in cfs$id[cfs$third==1]){
 spag_data_high <- data.frame(Participant=id_vec,x_v=x_vec,y_v=y_vec)
 predh_high<-(fix_Intercept + fix_third) + (fix_indepcw + fix_indepcw_third)*process$indep[process$third==1]  
 spag_data_pre_high <- data.frame(Participant=51,x_v=process$indep[process$third==1],y_v=predh_high)
+y_max <-ceiling(max(spag_data_high$y_v))+1
 
 # low smartphone affection group : third=0
 id_vec <- c()
@@ -335,7 +340,6 @@ for (i in cfs$id[cfs$third==0]){
 predl_low <-fix_Intercept + fix_indepcw*process$indep[process$third==0]
 spag_data_low <- data.frame(Participant=id_vec,x_v=x_vec,y_v=y_vec)
 spag_data_pre_low <- data.frame(Participant=51,x_v=process$indep[process$third==0],y_v=predl_low)
-y_max <-ceiling(max(spag_data_pre_low$y_v))+1
 
 
 p1 <- ggplot() +
@@ -346,16 +350,15 @@ p1 <- ggplot() +
   #axis.title.y = element_text(face="bold",angle=90))+  #coord_trans(y="log10", limy=c(1000,6000)) +
   labs(list(title = "AUC", y = paste("Predicted smartphone usage time in min/h"))) + 
   #geom_line(size=1) + theme(legend.position="none")+
-  ggtitle("Group: High smartphone affection")+
+  ggtitle("Group: Low smartphone affection")+
   xlab("arousal state")+
-  scale_x_continuous(,limits=c(0,1), breaks = c(0,1),minor_breaks = seq(0, 1, 1),labels=label_name) +
-  scale_y_continuous(expand=c(0,0), limits=c(0,y_max), labels=c("0","","2","","4","","6","","8","","10","","12","","14","","16","","18","","20","","22","","24","","26","","28","","30"), breaks = seq(0,30,1)) +
+  scale_x_continuous(,limits=c(0,1), breaks = c(0,1),labels=label_name) +
+  scale_y_continuous(expand=c(0,0), limits=c(0,y_max), breaks = seq(-20,40,1)) +
   theme(plot.title = element_text(hjust = +0.5))+ 
   scale_size_manual(name = 'Average participant', breaks=c("solid"),values =2, labels = c(''))+
   #labs(linetype = "solid",Position)
   #theme(legend.position=c(1,0))+
   labs(colour = "Participant", shape = "                  Cut") +
-  theme(plot.title = element_text(face="bold"))+
   theme(legend.position="none")
 #guides(linetype = guide_legend(order = 1))
 print(p1)
@@ -368,21 +371,20 @@ p2 <- ggplot() +
   #theme_grey()+
   #theme(panel.grid.minor = element_line(colour="grey", size=0.5)) + 
   #theme(axis.title.x = element_blank())+
-        #axis.title.y = element_text(face="bold",angle=90))+  #coord_trans(y="log10", limy=c(1000,6000)) +
+  #axis.title.y = element_text(face="bold",angle=90))+  #coord_trans(y="log10", limy=c(1000,6000)) +
   labs(list(title = "AUC", y = paste("Predicted smartphone usage time in min/h"))) + 
   #geom_line(size=1) + theme(legend.position="none")+
-  ggtitle("Group: Low smartphone affection")+
+  ggtitle("Group: High smartphone affection")+
   xlab("arousal state")+
   scale_x_continuous(,limits=c(0,1), breaks = c(0,1),minor_breaks = seq(0, 1, 1),labels=label_name) +
-  scale_y_continuous(expand=c(0,0), limits=c(0,y_max), labels=c("0","","2","","4","","6","","8","","10","","12","","14","","16","","18","","20","","22","","24","","26","","28","","30"), breaks = seq(0,30,1)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0,y_max), breaks = seq(-20,40,1)) +
   theme(plot.title = element_text(hjust = +0.5))+ 
   scale_size_manual(name = 'Average participant', breaks=c("solid"),values =2, labels = c(''))+
   #labs(linetype = "solid",Position)
   #theme(legend.position=c(1,0))+
-  theme(plot.title = element_text(face="bold"))+
   labs(colour = "Participant", shape = "                  Cut")
-  #guides(linetype = guide_legend(order = 1))
-  
+#guides(linetype = guide_legend(order = 1))
+
 print(p2)
 
 
@@ -390,18 +392,17 @@ print(p2)
 
 
 boxplot_grid <- plot_grid(p1,p2, ncol=2, labels = c(),hjust=-21,rel_widths=c(0.79,1.1))
-save_plot(file=paste0("8.4_spaghetti_",label_name[1],"_",gsub("\n"," ",label_name[2]),"_dt_min_",dt_min,".emf"),plot=boxplot_grid, base_width=14, base_height=5)
-
+save_plot(file=paste0("8.4_spaghetti_",label_name[1],"_",gsub("\n"," ",label_name[2]),"_dt_min_",dt_min,".emf"),plot=boxplot_grid, base_width=12, base_height=4)
 
 ####################################
 summary(cpmodel)
 summary_save <- summary(cpmodel)
 
 #summary(cpmodel_lmer)
-rand(cpmodel)
+#rand(cpmodel)
 #confint(cpmodel_lmer, oldNames=FALSE, level = 0.95)
 #temp <- difflsmeans(cpmodel_lmer)
-step(cpmodel)
+#step(cpmodel)
 # # likelihood ratio tests
 # #fixed effects
 # anova(cpmodel)
@@ -443,9 +444,9 @@ step(cpmodel)
 # cpmodel_nr <- lme(fixed=dep ~ time7c + indepcw*third + indepcb*third, data=process, random=~indepcw | id, correlation = corAR1(),na.action=na.omit,control = lmeControl(msMaxIter = 200, msMaxEval = 500, msVerbose = TRUE, sing.tol=1e-20))})
 # 
 
-# number_0_1 <- c()
-# for (i in 1:length(unique(process$id))){
-#   number_0_1 <- c(number_0_1,describeBy(process$third,process$id)[[i]]$mean)
-# }
-# describeBy(number_0_1,number_0_1)
+number_0_1 <- c()
+for (i in 1:length(unique(process$id))){
+  number_0_1 <- c(number_0_1,describeBy(process$third,process$id)[[i]]$mean)
+}
+describeBy(number_0_1,number_0_1)
 
